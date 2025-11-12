@@ -1,5 +1,6 @@
 import express from 'express';
 import { sendToOpenAI } from "../services/openAI";
+import { sendToGemini } from "../services/googleGeminiFlash";
 import { getSheetData, updateSheetData } from '../services/googleSheet';   
 import fs from "fs";
 import path from "path";
@@ -57,8 +58,8 @@ router.post("/batch-translate", async (req, res) => {
                         }).join("\n");
 
                         const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
-                        const gptResult = await sendToOpenAI(inputText, prompt);
-                        const translationMap = parseTranslationTextToMap(gptResult);
+                        const geminiResult = await sendToGemini(inputText, prompt);
+                        const translationMap = parseTranslationTextToMap(geminiResult);
 
                         translations[lang] = translationMap;
                         console.log(`✅ ${lang} 번역 완료:`, translationMap);
