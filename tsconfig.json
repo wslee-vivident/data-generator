@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+        "strict" : true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "Node",
+        "outDir": "./dist",
+        "rootDir": ".",
+        "module": "CommonJS",
+        "target": "ES2021",
+        "baseUrl": ".",
+        "paths": {
+            "@shared/*": ["shared/*"]
+        }
+    },
+    "include": [
+        "server/**/*.ts",
+        "shared/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "client"
+    ]
+}

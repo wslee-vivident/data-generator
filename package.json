@@ -1,0 +1,31 @@
+{
+    "name" : "data-generator-game-design",
+    "version" : "1.0.0",
+    "main" : "dist/server/index.js",
+    "scripts" : {
+        "clean": "rimraf dist client/dist",
+        "build:server": "tsc -p tsconfig.json",
+        "build": "npm run clean && npm run build:server && npm run copy",
+        "copy": "node ./copy-assets.js",
+        "start": "node dist/server/index.js",
+        "dev": "ts-node-dev --respawn --project tsconfig.json server/app.ts"
+    },
+    "dependencies": {
+        "axios": "^1.11.0",
+        "dotenv": "^17.2.1",
+        "express": "^5.1.0",
+        "firebase-admin": "^13.4.0",
+        "firebase-functions": "^6.4.0",
+        "google-auth-library": "^10.2.0",
+        "googleapis": "^154.1.0",
+        "node-fetch": "^3.3.2"
+    },
+    "devDependencies": {
+        "@types/axios": "^0.9.36",
+        "@types/dotenv": "^8.2.3",
+        "@types/express": "^5.0.3",
+        "@types/node": "^24.1.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.4"
+    }
+}
