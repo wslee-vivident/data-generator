@@ -1,44 +1,54 @@
 import axios from "axios";
 
 interface GeminiChatResponse {
-    choices: {
-        message: {
-            content: string;
-        };
-    }[];
+   candidates : {
+    content : {
+        parts : {
+            text : string;
+        }[];
+    };
+    finishReason? : string;
+   }[];
+   usageMetadata? : {
+    promptTokenCount : number;
+    candidateTokenCount : number;
+    totalTokenCount : number;
+   };
 }
 
 export async function sendToGemini(inputText:string, systemPrompt: string): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
-
-    const response = await axios.post<GeminiChatResponse>(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-        {
-            // --- Body 영역 (데이터) ---
-            systemInstruction: {
-                parts: [ { text: systemPrompt } ]
-            },
-            contents: [
-                {
-                    role: "user",
-                    parts: [ { text: inputText } ]
-                }
-            ],
-            generationConfig: {
-                temperature: 0.3,
-                maxOutputTokens: 2048
-            }
+    const modelName = "gemini-2.5-flash";
+    const postUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+    const body = {
+        system_instruction : {
+            parts : [
+                { text : systemPrompt }
+            ]
         },
-        {
-            // --- Header 영역 (인증) ---
-            headers: {
-                "Content-Type": "application/json",
-                // "Authorization": `Bearer ${apiKey}` (X) -> 이렇게 쓰지 마세요
-                "x-goog-api-key": apiKey // (O) -> 이 헤더를 사용합니다
+        contents : [
+            {
+                role : "user",
+                parts : [
+                    { text : inputText }
+                ]
             }
-        }
-    );
+        ]
+    };
+    const headers = {
+        'Content-Type': 'application/json',
+        'x-google-api-key': apiKey,
+    };
 
-    const message = response.data.choices?.[0]?.message?.content || "";
-    return message.trim();
+    try {
+        const response = await axios.post<GeminiChatResponse>(postUrl, body, { headers });
+        
+        const candidate = response.data.candidates?.[0];
+        const message = candidate?.content.parts[0].text || "";
+        return message.trim();
+
+    } catch (error) {
+        console.error("Error communicating with Gemini API:", error);
+        throw new Error("Failed to get response from Gemini API");
+    }
 }
