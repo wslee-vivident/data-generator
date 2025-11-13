@@ -15,7 +15,9 @@ COPY . .
 
 # Build TypeScript code
 RUN npm run build
-RUN npm run copy
+
+# Copy prompt files *after* build
+COPY server/prompts/ /app/prompts/
 
 # Expose application port (change if needed)
 ENV PORT=8080
