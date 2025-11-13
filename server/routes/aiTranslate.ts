@@ -58,8 +58,10 @@ router.post("/batch-translate", async (req, res) => {
                         }).join("\n");
 
                         const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
-                        const geminiResult = await sendToGemini(inputText, prompt);
-                        const translationMap = parseTranslationTextToMap(geminiResult);
+                        //const geminiResult = await sendToGemini(inputText, prompt);
+                        //const translationMap = parseTranslationTextToMap(geminiResult);
+                        const gptResult = await sendToOpenAI(inputText, prompt);
+                        const translationMap = parseTranslationTextToMap(gptResult);
 
                         translations[lang] = translationMap;
                         console.log(`✅ ${lang} 번역 완료:`, translationMap);
@@ -74,7 +76,7 @@ router.post("/batch-translate", async (req, res) => {
         res.status(200).json({ status: "OK", forwarded: true });
 
     } catch (err) {
-        //console.error("Error in /ai/batch-translate", err);
+        console.error("Error in /ai/batch-translate", err);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
