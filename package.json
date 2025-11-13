@@ -1,8 +1,8 @@
 {
-    "name" : "data-generator-game-design",
-    "version" : "1.0.0",
-    "main" : "dist/server/index.js",
-    "scripts" : {
+    "name": "data-generator-game-design",
+    "version": "1.0.0",
+    "main": "dist/server/index.js",
+    "scripts": {
         "clean": "rimraf dist client/dist",
         "build:server": "tsc -p tsconfig.json",
         "build": "npm run clean && npm run build:server && npm run copy",

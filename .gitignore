@@ -37,3 +37,6 @@ coverage/
 *.ntvs*
 *.njsproj
 *.sln
+
+#token
+game-design-476609-94a3da15253a.json
