@@ -1,6 +1,6 @@
 import express from 'express';
 import { sendToOpenAI } from "../services/openAI";
-import { sendToGemini } from "../services/googleGeminiFlash";
+import { sendToGemini } from "../services/googleGemini";
 import { getSheetData, updateSheetData } from '../services/googleSheet';   
 import fs from "fs";
 import path from "path";

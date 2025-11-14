@@ -10,6 +10,7 @@ interface OpenAIChatResponse {
 
 export async function sendToOpenAI(inputText:string, systemPrompt: string): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
+    if(!apiKey) throw new Error("OpenAI API key is not set in environment variables.");
 
     const response = await axios.post<OpenAIChatResponse>(
         "https://api.openai.com/v1/chat/completions",
@@ -20,7 +21,7 @@ export async function sendToOpenAI(inputText:string, systemPrompt: string): Prom
                 { role: "system", content: systemPrompt }
             ],
             temperature: 0.3,
-            max_tokens: 2048,
+            max_tokens: 4096,
         },
         {
             headers: {
