@@ -2,7 +2,9 @@ import { google } from 'googleapis';
 
 // ✅ 1. 인증 객체 생성 (서비스 계정용)
 const auth = new google.auth.GoogleAuth({
-    scopes : ['https://www.googleapis.com/auth/spreadsheets'],
+    scopes : [
+        'https://www.googleapis.com/auth/spreadsheets',
+    ],
 });
 
 export const getSheetData = async (sheetId : string, sheetName : string, startRow = 1):Promise<Record<string,string>[]> => {
@@ -84,3 +86,4 @@ export const appendSheetData = async (
         updatedRange : response.data.updates?.updatedRange
     }
 };
+

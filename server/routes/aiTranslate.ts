@@ -7,13 +7,27 @@ import path from "path";
 
 const router = express.Router();
 
+const ALLOWED_TYPES = [
+    "label", "desc", "title", "radio", "checkbox",
+    "btn", "toggle", "option", "dropdown", "etc", "characterDialog"
+];
+
 router.post("/batch-translate", async (req, res) => {
     console.log("REQ BODY", req.body);
     try {
         const { data, languages, sheetName, sheetId , promptFile} = req.body;
 
-        if(!data || !Array.isArray(data) || data.length === 0 || sheetId === "" || sheetName === "") { 
-            return res.status(400).json({ error: "Invalid data format" });
+        if(
+            !data ||
+            !Array.isArray(data) ||
+            data.length === 0 ||
+            !languages ||
+            !Array.isArray(languages) ||
+            languages.length === 0 ||
+            sheetId === "" ||
+            sheetName === ""
+        ) {
+            return res.status(400).json({error : "Invalid data format"});
         }
         console.log(`targetSheet : ${sheetName} \n FileId : ${sheetId}`);
 
@@ -32,69 +46,78 @@ router.post("/batch-translate", async (req, res) => {
                 console.error("Error reading prompt file:", error);
             }
         }      
-
-        const baseBatchId = `job-${Date.now()}`;
-        const BATCH_SIZE = 50; //배치 크기 설정
         
+        // # 배치 분할
+        const BATCH_SIZE = 20;
         const totalBatches = Math.ceil(data.length / BATCH_SIZE);
         const batches = Array.from({ length : totalBatches }, (_, i) => 
             data.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
         );
+
+         // ✅ 핵심: "시트 쓰기"는 직렬 처리 (for-loop)
+         for(let index = 0; index < batches.length; index++) {
+            const batchData = batches[index];
+            const batchId = `job-${Date.now()}-$batch${index}`;
+
+            console.log(`\n--- Processing ${batchId} (${index + 1}/${totalBatches}) ---`);
+
+            // # 배치 번역: 언어는 병렬
+            const batchTranslations = await translateOneBatch(batchData, languages, systemPrompt);
+
+            // # 시트 반영: get → merge → update (직렬이므로 경쟁상태 제거)
+            const mergedRows = await mergeSheetDataSafe(sheetId, sheetName, batchTranslations);
+
+            // updateSheetData(sheetId, sheetName, headerRowCount, rows)
+            await updateSheetData(sheetId, sheetName, 2, mergedRows);
+
+            console.log(`✅ Sheet updated for batch ${index + 1}/${totalBatches}`);
+         }
+
+         return res.status(200).json({ status : "OK" });
         
-        const translations : { [lang : string] : Record<string, string> } = {};
-        //각 배치 그룹에 대해 OpenAI로 번역 요청
-        //여러 언어에 대해 번역 결과를 콜백 URL로 전송
-        await Promise.all(
-            batches.map(async (batchData, index) => {
-                const batchId = `${baseBatchId}-bacth${index}`;
-                const isLastBatch = index === totalBatches - 1;
-
-                await Promise.all(
-                    languages.map(async (lang:string) => {
-                        const inputText = batchData.map(row => {
-                            return Array.isArray(row)
-                            ? `${row[0]}, ${row[1]}, ${row[2]}`
-                            : `${row.key}, ${row.type}, ${row.text}`;
-                        }).join("\n");
-
-                        const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
-                        //const geminiResult = await sendToGemini(inputText, prompt);
-                        //const translationMap = parseTranslationTextToMap(geminiResult);
-                        const gptResult = await sendToOpenAI(inputText, prompt);
-                        const translationMap = parseTranslationTextToMap(gptResult);
-
-                        translations[lang] = translationMap;
-                        console.log(`✅ ${lang} 번역 완료:`, translationMap);
-                    })
-                );
-
-                const mergeRows = await mergeSheetData(sheetId, sheetName, translations);
-                await updateSheetData(sheetId, sheetName, 2, mergeRows);
-            })
-        );
-        
-        res.status(200).json({ status: "OK", forwarded: true });
-
     } catch (err) {
         console.error("Error in /ai/batch-translate", err);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
+async function translateOneBatch(
+    batchData : any[],
+    languages : string[],
+    systemPrompt : string,
+) : Promise<Record<string, Record<string, string>>> {
+    const perLang : Record<string, Record<string, string>> = {};
+
+    await Promise.all(
+        languages.map(async (lang) => {
+            const inputText = batchData
+                .map((row) => {
+                    return Array.isArray(row)
+                        ? `${row[0]}, ${row[1]}, ${row[2]}`
+                        : `${row.key}, ${row.type}, ${row.text}`;
+                })
+                .join("\n");
+            
+            const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
+
+            const gptResult = await sendToOpenAI(inputText, prompt);
+            perLang[lang] = parseTranslationTextToMap(gptResult);
+        })
+    );
+
+    return perLang;
+}
+
 function parseTranslationTextToMap(text : string) :Record<string, string> {
     const lines = text.split("\n").filter(line => line.trim() !== "");
     const map : Record<string, string> = {};
     
-    const allowedTypes = [
-        "label", "desc", "title", "radio", "checkbox",
-        "btn", "toggle", "option", "dropdown", "etc", "sequence"
-    ];
+    const typeRegex = new RegExp(`^(${ALLOWED_TYPES.join("|")})\\s*,?\\s*`, "i");
 
     for(const line of lines) {
         const [keyPart, ...rest] = line.split(",");
-        const key = keyPart.trim();
+        const key = (keyPart ?? "").trim();
         const valueRaw = rest.join(",").trim();
-        const typeRegex = new RegExp(`^(${allowedTypes.join("|")})\\s*,?\\s*`, "i");
         
         const value = valueRaw.replace(typeRegex, "").trim();
 
@@ -106,27 +129,37 @@ function parseTranslationTextToMap(text : string) :Record<string, string> {
     return map;
 }
 
-async function mergeSheetData(
+async function mergeSheetDataSafe(
     sheetId : string,
     sheetName : string, 
     newTranslations : Record<string, Record<string, string>>
-) :Promise<Record<string, string>[]> {
-    const existngRows = await getSheetData(sheetId, sheetName);
+) :Promise<Record<string, any>[]> {
+    const existingRows = await getSheetData(sheetId, sheetName);
 
-    // 2. key 기준 map
-    const rowMap = new Map<string, Record<string, string>>();
-    existngRows.forEach(row => {
-        rowMap.set(row.key, {...row});
+    // 2. key 기준 rowMap
+    const rowMap = new Map<string, Record<string, any>>();
+    existingRows.forEach((row : any) => {
+        const k = String(row.key ?? "").trim();
+        if (k) rowMap.set(k, {...row});
     });
 
-    // 3. 병합
-    Object.entries(newTranslations).forEach(([lang, langMap]) => {
-        Object.entries(langMap).forEach(([key, text]) => {
-            const existing = rowMap.get(key) || { key };
-            existing[lang] = text;
-            rowMap.set(key, existing);
-        });
-    });
+    // 3. 병합 : 빈 값이면 기존 유지
+    for(const [lang, langMap] of Object.entries(newTranslations)) {
+        for(const [key, text] of Object.entries(langMap)) {
+            const normalizedKey = String(key ?? "").trim();
+            if(!normalizedKey) continue;
+
+            const existing = rowMap.get(normalizedKey) || { key : normalizedKey };
+
+            // ✅ 새 번역이 유효할 때만 덮어쓰기
+            if(text && text.trim() !== "") {
+                existing[lang] = text;
+            }
+
+            rowMap.set(normalizedKey, existing);
+        }
+    }
+    
 
     return Array.from(rowMap.values());
 }
