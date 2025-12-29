@@ -12,6 +12,43 @@ const ALLOWED_TYPES = [
     "btn", "toggle", "option", "dropdown", "etc", "characterDialog"
 ];
 
+router.post("/batch-group-translate", async (req, res) => {
+    console.log("REQ BODY", req.body);
+    try {
+        const { data, languages, sheetName, sheetId, promptFile } = req.body;
+
+        console.log(`targetSheet : ${sheetName} \n FileId : ${sheetId}`);
+        
+        //parse sheet values to Objects
+        const objectData = parseSheetDataToObjects(data);
+
+        //Step.1 data grouping
+        const groupedData = groupDataByStrategy(objectData);
+
+        //Step.2 translate all of groups in parallel per language
+        const allTranslations = await processAllGroups(groupedData, languages, promptFile);
+
+        //Step.3 merge and update sheet atomic update
+        console.log("Applying all translations to sheet...");
+
+        //Part.1 get existing rows
+        const currentSheetRows = await getSheetData(sheetId, sheetName);
+
+        //Part.2 Merge all translations with the existing rows (sheet data)
+        const mergedRows = mergeTranslationsInMemory(currentSheetRows, allTranslations);
+
+        //Part.3 Update sheet once
+        await updateSheetData(sheetId, sheetName, 2, mergedRows);
+
+        console.log("✅ All batches completed and sheet updated safely.");
+        return res.status(200).json({ status: "OK"});
+
+    } catch (err) {
+        console.error("Error in /ai/batch-group-translate", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 router.post("/batch-translate", async (req, res) => {
     console.log("REQ BODY", req.body);
     try {
@@ -100,8 +137,9 @@ async function translateOneBatch(
             
             const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
 
-            const gptResult = await sendToOpenAI(inputText, prompt);
-            perLang[lang] = parseTranslationTextToMap(gptResult);
+            //const translateResult = await sendToOpenAI(inputText, prompt);
+            const translateResult = await sendToGemini(inputText, prompt);
+            perLang[lang] = parseTranslationTextToMap(translateResult);
         })
     );
 
@@ -127,6 +165,30 @@ function parseTranslationTextToMap(text : string) :Record<string, string> {
     }
 
     return map;
+}
+
+export function parseSheetDataToObjects(data : any[][]) : Record<string, any>[] {
+    if(!Array.isArray(data) || data.length === 0) {
+        return [];
+    }
+
+    const headers = data[0].map( h => String(h).trim());
+
+    const rows = data.slice(1);
+
+    return rows.map(row => {
+        const obj : Record<string, any> = {};
+        headers.forEach( (header, index) => {
+            obj[header] = row[index] ?? "";
+        });
+        return obj;
+    });
+}
+
+function groupDataByStrategy(data : any[]) :Record<string, any[]> {
+    const groups : Record<string, any[]> = {
+        'default' : []
+    };
 }
 
 async function mergeSheetDataSafe(
