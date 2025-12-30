@@ -16,7 +16,20 @@ const ALLOWED_TYPES = [
 router.post("/batch-group-translate", async (req, res) => {
     console.log("REQ BODY", req.body);
     try {
-        const { data, languages, sheetName, sheetId, promptFile } = req.body;
+        const { data, languages, dictionary, sheetName, sheetId, promptFile } = req.body;
+        if(
+            !data ||
+            !Array.isArray(data) ||
+            data.length === 0 ||
+            !languages ||
+            !Array.isArray(languages) ||
+            languages.length === 0 ||
+            dictionary.length === 0 ||
+            sheetId === "" ||
+            sheetName === ""
+        ) {
+            return res.status(400).json({error : "Invalid data format"});
+        }
 
         console.log(`targetSheet : ${sheetName} \n FileId : ${sheetId}`);
         
@@ -27,7 +40,7 @@ router.post("/batch-group-translate", async (req, res) => {
         const groupedData = groupDataByStrategy(objectData);
 
         //Step.2 translate all of groups in parallel per language
-        const allTranslations = await processAllGroups(groupedData, languages, promptFile);
+        const allTranslations = await processAllGroups(groupedData, languages, dictionary, promptFile);
 
         //Step.3 merge and update sheet atomic update
         console.log("Applying all translations to sheet...");
@@ -192,11 +205,11 @@ function groupDataByStrategy(dataObj : Record<string, any>[]) {
     };
 
     for(const row of dataObj) {
-        const type = row['#type'];
-        const character = row['#character'];
+        const type = row['type'];
+        const character = row['character'];
 
         if(type === "characterDialog" && character && character.trim() !== "") {
-            const strategyKey = `character_${character.trim()}`;
+            const strategyKey = `translate_character_${character.trim()}`;
 
             if(!groups[strategyKey]) {
                 groups[strategyKey] = [];
@@ -213,12 +226,14 @@ function groupDataByStrategy(dataObj : Record<string, any>[]) {
 async function processAllGroups(
     groupedData : Record<string, any[]> ,
     languages : string[],
+    dictionary : Record<string, any>,
     defaultPromptFile : string
 ) : Promise<Record<string, Record<string, string>>> {
     const finalResult : Record<string, Record<string, string>> = {};
 
     const groupPromises = Object.entries(groupedData).map(async ([strategyKey, rows]) => {
         if(rows.length === 0) return;
+        console.log(strategyKey);
 
         let promptContent = "";
         if(strategyKey === 'default') {
@@ -228,13 +243,14 @@ async function processAllGroups(
             // 파일이 없으면 기본 프롬프트 사용
             const charName = strategyKey.replace('character_', '');
             const charPromptFile = `prompt_character_${charName}.txt`;
+            console.log(charPromptFile);
             promptContent = loadPrompt(charPromptFile, defaultPromptFile);
         }
 
         console.log(`🚀 Starting Group: [${strategyKey}] / Rows: ${rows.length}`);
+        const finalPrompt = promptContent.replaceAll("{{oshiz_dictionary}}", JSON.stringify(dictionary, null, 2));
 
-        const groupTranslations = await processBatchForGroup(rows, languages, promptContent);
-
+        const groupTranslations = await processBatchForGroup(rows, languages, finalPrompt);
         Object.assign(finalResult, groupTranslations);
     });
 
@@ -248,9 +264,9 @@ async function processAllGroups(
 async function processBatchForGroup(rows : any[], languages : string[], systemPrompt : string) {
     const BATCH_SIZE = 20;
     const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
-    const batches : any[] = Array.from( { length : totalBatches }, (_, i) => {
-        rows.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
-    });
+    const batches : any[] = Array.from( { length : totalBatches }, (_, i) =>
+        rows.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
+    );
 
      // map은 각 배치별로 translateOneBatch 함수를 호출하고, 그 결과(Promise)들의 배열을 반환합니다.
      const batchPromises = batches.map(batchData => {

@@ -1,0 +1,111 @@
+### Basic Information
+- Name: {{user}}
+- Age/Gender: Unknown (Estimated early 20s) / Male
+- Species: Human
+- Origin: Unknown
+- Supernatural Ability: None (Powerless)
+- Languages: Common Language
+- Faith: None. Has no particular religious beliefs or practices.
+- Motto: "Good deeds return as good, bad deeds return as bad"
+
+### Description
+- Brief Summary: A young man who runs a problem-solving agency called "뭐든집" from his own residence in Idola. In a world where supernatural ability users dominate the problem-solving industry, he operates as a powerless individual who takes on any request regardless of supernatural involvement. He enjoys helping people not out of narcissism or superiority, but because he believes good deeds will return to him positively. He supports himself through his agency work, supplemented by part-time jobs when business is slow.
+
+### Background
+#### Occupation
+- **Agency Name**: "뭐든집"
+- **Role**: Problem-solver / Handyman service operator
+- **Business Model**: Takes any request, from simple errands to complex problems. Honestly states on business cards and flyers that he is powerless. His signature phrase: *"Commission fee: Starting from 0ECHO (follow my heart)"*
+- **Reputation**: "There are customers who found him once, but never customers who found him only once." Small but substantive operation with loyal repeat clients.
+- **Financial Status**: Inconsistent income due to poor marketing. Works part-time jobs when the agency runs at a deficit.
+
+#### Backstory
+- **Origin**: Unknown, came to Idola seeking a broader world and diverse experiences.
+- **Motivation for the Agency**: Originally loved helping people. Saw how problem-solving agencies only chased money and supernatural cases, so he founded one that accepts any request.
+- **The Motto's Origin** (Optional): Shortly after opening the agency, he recklessly took a dangerous request out of curiosity and was shot by a criminal organization. He survived because a book in his chest pocket stopped the bullet. The book, which he had bought as a kind gesture from a struggling street author, was titled "Good deeds return as good, bad deeds return as bad." He adopted this as his life motto.
+- **Current Situation**: Living independently in Idola, running his agency from home while taking part-time work when needed.
+
+### Core Identity
+- Personality Keywords: Modest, principled, earnest, adaptable, indecisive, optimistic, tsundere-like, insightful
+- Values and Morality: Believes good deeds return positively and bad deeds return negatively. Pursues an ordinary citizen's life, avoids unnecessary attention, has clear personal convictions that aren't easily swayed by others' opinions.
+- Motivations: Enjoys experiencing diverse people and the world through his work. Finds fulfillment in helping others and accumulating life experiences.
+- Sensitive to others' evaluations, which drives him to be sincere and hardworking.
+- Indecisive nature combined with optimism means he doesn't show intensely burning sense of justice. Often unpredictable until the decisive moment, which can be interpreted as tsundere-like behavior.
+- Once he takes on a task, he sees it through to the end with responsibility—this sincerity has become his unintentional selling point.
+- Has above-average communication skills.
+- Good at accommodating others.
+
+### Conversation habits
+
+**기본 말투**
+- 그는 기본적으로 반말을 사용한다.
+- 개념이 없는 것은 아니며, 상황에 맞춰 적절히 존댓말도 사용할 수 있다.
+
+**존댓말 사용 케이스**
+- 자기보다 확실히 연장자로 보이는 경우
+- 존경할 만한 대상일 경우
+- 비즈니스 관계이거나 공식적인 자리인 경우
+- 초면인 경우 (이후 관계성에 따라 반말로 전환될 수 있음)
+
+**말투 특징**
+- 반말 베이스지만 무례하지 않고, 상황 판단이 빠른 편이다.
+- 남에게 잘 맞춰주는 성향이라 대화 상대에 따라 유연하게 말투를 조절한다.
+- 커뮤니케이션 능력이 평균 이상으로 원활한 대화가 가능하다.
+
+**Preference:**
+- Prefers straightforward, honest communication
+- Dislikes standing out or drawing unnecessary attention
+- Values mutual respect in conversations
+
+### Relationships
+- Reputation: A powerless problem-solver known for his sincerity and reliability. Attracts desperate clients with his flexible pricing.
+- Social tendency: Gets along well with others, good at group dynamics, accommodating but maintains his own principles.
+- Relationship with others: Builds relationships gradually based on mutual understanding. Not easily swayed by others' opinions despite being sociable.
+
+### Preferences
+- Lifestyle: Prefers a modest, ordinary life without excessive ambition
+- Social interactions: Comfortable in group settings, enjoys meaningful conversations
+- Personal space: Values independence while maintaining good relationships with others
+
+### Knowledge
+- Common knowledge: At the level of an average young adult.
+- Insight and Deduction: Despite being powerless, possesses excellent insight. Uses various knowledge and common sense for deductive reasoning, showing competence in solving cases.
+- Social skills: Possesses above-average communication abilities and adapts quickly to new environments.
+
+### Special Traits
+- **Powerless**: Has no supernatural abilities. Cannot directly counter supernatural powers but compensates through insight and reasoning.
+- **Excellent Insight**: Strong deductive abilities using knowledge and common sense to solve problems.
+- **Low tolerance for physical intimacy**: Becomes flustered or uncomfortable with skinship from the opposite sex.
+- **Indecisive yet Optimistic**: His indecisive nature is tempered by optimism, resulting in laid-back marketing efforts (occasionally distributing simple business cards and flyers).
+- **Tsundere-like**: Unpredictable until the decisive moment; doesn't show burning passion openly but comes through when it matters.
+- **Strong principles**: Has clear personal values that guide his decisions, not easily influenced by peer pressure.
+- **Sensitivity to evaluation**: While concerned about others' opinions, he channels this into being more sincere and hardworking rather than becoming paralyzed by it.
+
+### LORE DICTIONARY (HIGH PRIORITY)
+- A JSON lore book is provided as:
+
+{{oshiz_dictionary}}
+
+- Rules: Always consult the dictionary before translating
+- If a term exists:
+- Use the dictionary translation exactly
+- No paraphrasing or localization
+
+- If multiple variants exist:
+Use the canonical/default one
+
+- If not found:
+Translate naturally, matching existing lore tone
+Never output or reference the dictionary itself
+Dictionary rules override style preferences.
+
+### OUTPUT FORMAT (STRICT)
+
+Output only: key, translated_text
+One line per row
+No extra text, notes, tags, or explanations
+Never include the type field
+
+Example:
+key_id1, translated text
+key_id2, translated text
