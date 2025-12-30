@@ -113,7 +113,7 @@ router.post("/batch-translate", async (req, res) => {
             console.log(`\n--- Processing ${batchId} (${index + 1}/${totalBatches}) ---`);
 
             // # 배치 번역: 언어는 병렬
-            const batchTranslations = await translateOneBatch(batchData, languages, systemPrompt);
+            const batchTranslations = await translateOneBatch(batchData, languages, systemPrompt, "gpt");
 
             // # 시트 반영: get → merge → update (직렬이므로 경쟁상태 제거)
             const mergedRows = await mergeSheetDataSafe(sheetId, sheetName, batchTranslations);
@@ -136,6 +136,7 @@ async function translateOneBatch(
     batchData : any[],
     languages : string[],
     systemPrompt : string,
+    model : string
 ) : Promise<Record<string, Record<string, string>>> {
     const perLang : Record<string, Record<string, string>> = {};
 
@@ -150,9 +151,18 @@ async function translateOneBatch(
                 .join("\n");
             
             const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
-
-            //const translateResult = await sendToOpenAI(inputText, prompt);
-            const translateResult = await sendToGemini(inputText, prompt);
+            
+            let translateResult = "";
+            switch(model) {
+                case "gpt":
+                    translateResult = await sendToOpenAI(inputText, prompt);
+                    break;
+                case "gemini":
+                    translateResult = await sendToGemini(inputText, prompt);
+                    break;
+                default:
+                    throw new Error(`Unsupported model type: ${model}`);
+            }
             perLang[lang] = parseTranslationTextToMap(translateResult);
         })
     );
@@ -236,8 +246,10 @@ async function processAllGroups(
         console.log(strategyKey);
 
         let promptContent = "";
+        let generateModel = "";
         if(strategyKey === 'default') {
             promptContent = loadPrompt(defaultPromptFile);
+            generateModel = "gpt";
         } else {
             // strategyKey가 'character_비앙카'라면 -> 'prompt_character_비앙카.txt' 로드 시도
             // 파일이 없으면 기본 프롬프트 사용
@@ -245,12 +257,13 @@ async function processAllGroups(
             const charPromptFile = `prompt_character_${charName}.txt`;
             console.log(charPromptFile);
             promptContent = loadPrompt(charPromptFile, defaultPromptFile);
+            generateModel = "gemini";
         }
 
         console.log(`🚀 Starting Group: [${strategyKey}] / Rows: ${rows.length}`);
         const finalPrompt = promptContent.replaceAll("{{oshiz_dictionary}}", JSON.stringify(dictionary, null, 2));
 
-        const groupTranslations = await processBatchForGroup(rows, languages, finalPrompt);
+        const groupTranslations = await processBatchForGroup(rows, languages, finalPrompt, generateModel);
         Object.assign(finalResult, groupTranslations);
     });
 
@@ -261,7 +274,7 @@ async function processAllGroups(
 /**
  * 특정 그룹의 데이터를 Batch로 나누어 번역하고 결과를 반환 (시트 쓰기 없음)
  */
-async function processBatchForGroup(rows : any[], languages : string[], systemPrompt : string) {
+async function processBatchForGroup(rows : any[], languages : string[], systemPrompt : string, model : string ) {
     const BATCH_SIZE = 20;
     const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
     const batches : any[] = Array.from( { length : totalBatches }, (_, i) =>
@@ -270,7 +283,7 @@ async function processBatchForGroup(rows : any[], languages : string[], systemPr
 
      // map은 각 배치별로 translateOneBatch 함수를 호출하고, 그 결과(Promise)들의 배열을 반환합니다.
      const batchPromises = batches.map(batchData => {
-        return translateOneBatch(batchData, languages, systemPrompt);
+        return translateOneBatch(batchData, languages, systemPrompt, model);
      });
 
      // results에는 각 배치의 결과가 배열 순서대로 담깁니다.
