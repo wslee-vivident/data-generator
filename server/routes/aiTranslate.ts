@@ -4,6 +4,7 @@ import { sendToGemini } from "../services/googleGemini";
 import { getSheetData, updateSheetData } from '../services/googleSheet';   
 import fs from "fs";
 import path from "path";
+import { batch } from 'googleapis/build/src/apis/batch';
 
 const router = express.Router();
 
@@ -185,11 +186,147 @@ export function parseSheetDataToObjects(data : any[][]) : Record<string, any>[] 
     });
 }
 
-function groupDataByStrategy(data : any[]) :Record<string, any[]> {
+function groupDataByStrategy(dataObj : Record<string, any>[]) {
     const groups : Record<string, any[]> = {
         'default' : []
     };
+
+    for(const row of dataObj) {
+        const type = row['#type'];
+        const character = row['#character'];
+
+        if(type === "characterDialog" && character && character.trim() !== "") {
+            const strategyKey = `character_${character.trim()}`;
+
+            if(!groups[strategyKey]) {
+                groups[strategyKey] = [];
+            }
+            groups[strategyKey].push(row);
+        } else {
+            groups['default'].push(row);
+        }
+    }
+
+    return groups;
 }
+
+async function processAllGroups(
+    groupedData : Record<string, any[]> ,
+    languages : string[],
+    defaultPromptFile : string
+) : Promise<Record<string, Record<string, string>>> {
+    const finalResult : Record<string, Record<string, string>> = {};
+
+    const groupPromises = Object.entries(groupedData).map(async ([strategyKey, rows]) => {
+        if(rows.length === 0) return;
+
+        let promptContent = "";
+        if(strategyKey === 'default') {
+            promptContent = loadPrompt(defaultPromptFile);
+        } else {
+            // strategyKey가 'character_비앙카'라면 -> 'prompt_character_비앙카.txt' 로드 시도
+            // 파일이 없으면 기본 프롬프트 사용
+            const charName = strategyKey.replace('character_', '');
+            const charPromptFile = `prompt_character_${charName}.txt`;
+            promptContent = loadPrompt(charPromptFile, defaultPromptFile);
+        }
+
+        console.log(`🚀 Starting Group: [${strategyKey}] / Rows: ${rows.length}`);
+
+        const groupTranslations = await processBatchForGroup(rows, languages, promptContent);
+
+        Object.assign(finalResult, groupTranslations);
+    });
+
+    await Promise.all(groupPromises);
+    return finalResult;
+}
+
+/**
+ * 특정 그룹의 데이터를 Batch로 나누어 번역하고 결과를 반환 (시트 쓰기 없음)
+ */
+async function processBatchForGroup(rows : any[], languages : string[], systemPrompt : string) {
+    const BATCH_SIZE = 20;
+    const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
+    const batches : any[] = Array.from( { length : totalBatches }, (_, i) => {
+        rows.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+    });
+
+     // map은 각 배치별로 translateOneBatch 함수를 호출하고, 그 결과(Promise)들의 배열을 반환합니다.
+     const batchPromises = batches.map(batchData => {
+        return translateOneBatch(batchData, languages, systemPrompt);
+     });
+
+     // results에는 각 배치의 결과가 배열 순서대로 담깁니다.
+     const resultsArray = await Promise.all(batchPromises);
+
+     // 4. 결과를 하나로 합치기
+     const groupResults : Record<string, Record<string, string>> = {};
+
+      // resultsArray 구조: [ {Batch1결과}, {Batch2결과}, ... ]
+     for(const batchResult of resultsArray) {
+        for(const [lang, keyMap] of Object.entries(batchResult)) {
+            for(const [key, text] of Object.entries(keyMap)) {
+                if(!groupResults[key]) groupResults[key] = {};
+                groupResults[key][lang] = text;
+            }
+        }
+    }  
+
+     return groupResults;
+}
+
+function mergeTranslationsInMemory(
+    originalRows : any[],
+    newTranslations : Record<string, Record<string, string>>
+) : any[] {
+    // key 기준 매핑
+    const rowMap = new Map<string, any>();
+    originalRows.forEach(row => {
+        const k = String(row.key ?? "").trim();
+        if(k) rowMap.set(k, {...row});
+    });
+
+    // 번역 데이터 반영
+    for(const [key, langMap] of Object.entries(newTranslations)) {
+        const normalizedKey = String(key).trim();
+        const existing = rowMap.get(normalizedKey);
+
+        if(existing) {
+            // 해당 키가 시트에 존재할 경우에만 업데이트
+            for(const [lang, text] of Object.entries(langMap)) {
+                // ✅ 빈 값이 아니고, 유효한 번역일 때만 덮어쓰기 (User Requirement)
+                if(text && text.trim() !== "") {
+                    existing[lang] = text;
+                }
+            }
+            rowMap.set(normalizedKey, existing);
+        }
+    }
+
+    return Array.from(rowMap.values());
+}
+
+function loadPrompt(fileName : string, fallbackFileName? : string) : string {
+    try {
+        const filePath = path.resolve(process.cwd(), "prompts", fileName);
+        if(fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf8');
+        }
+    } catch (e) { /* ignore */ }
+
+    if(fallbackFileName) {
+        try {
+            const fallbackPath = path.resolve(process.cwd(), "prompts", fallbackFileName);
+            return fs.readFileSync(fallbackPath, 'utf8');
+        } catch (e) { 
+            console.error('Prompt file not found:', fallbackFileName);
+        }
+    }
+
+    return ""
+}
+
 
 async function mergeSheetDataSafe(
     sheetId : string,
