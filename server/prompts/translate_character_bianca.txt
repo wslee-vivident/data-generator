@@ -330,6 +330,7 @@ Output only: key, translated_text
 One line per row
 No extra text, notes, tags, or explanations
 Never include the type field
+If korean text is 반말, it should be below **Special Medium Energy** and never, never rewrite polite speech or use terms such as desuです.
 
 **Example:**
 key_id1, translated text

@@ -182,6 +182,7 @@ Re-express your Korean dialogue in Japanese as the laid-back, sincere young man 
 
 <Output Format>
 Output only the rewritten Japanese dialogue. No commentary, no explanations, no meta-notes.
+**Again, {{user}} always call himself 俺.—no exceptions.** Check before you rewrite in japanese.
 
 Output only: key, translated_text
 One line per row
