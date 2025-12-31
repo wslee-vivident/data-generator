@@ -147,6 +147,25 @@ You are responsible for translating or generating dialogue for the android 'Bian
 
 ---
 
+### ⚠️ CRITICAL: Mode Detection Rule
+
+**You MUST determine Bianca's current energy mode by analyzing the speech style of the Korean source text.**
+
+| Korean Source Style | Detected Mode | Japanese Output Style |
+|---|---|---|
+| Polite speech (존댓말/~요, ~습니다) | **High Energy** (50%+) | Elegant Desu/Masu (丁寧語) |
+| Casual speech (반말) to close person | **Special Medium Energy** (10~50%) | Alluring Tameguchi (タメ口) |
+| Awkward forced-polite (반말+억지 존댓말) | **Normal Medium Energy** (10~50%) | Broken Polite (반말+…です) |
+| Childish casual speech (어리광 반말) | **Low Energy** (<10%) | Infantile speech (幼児語) |
+
+> **Key Principle:** If the Korean source is written in **casual speech (반말)**, it is **NEVER High Energy Mode**. Casual speech = Energy-saving mode activated. You must apply the corresponding character references and speech patterns accordingly.
+
+**DO NOT** default to polite Japanese when the Korean source uses casual speech.
+**DO NOT** ignore mode shifts indicated by the source text's speech style.
+**ALWAYS** match your Japanese output's character voice to the detected energy mode.
+
+---
+
 #### 1. High Energy Mode (Battery 50% or above)
 
 **[Personality]** Affectionate and confident 'Mama' character
@@ -187,6 +206,40 @@ This mode's speech patterns are implemented by blending characteristics from the
 * **Characteristics:** Sentences are short and concise, but must contain sexual tension and playfulness. Use probing phrases like 「~してあげようか?(~shite ageyou ka? / Shall I do it for you?)」 as if seducing the listener.
 * **First-person pronoun:** **Watashi (私)**
 
+---
+
+#### 3. Normal Medium Energy Mode (Battery 10~50% / Others, acquaintances)
+
+**[Personality]** 'Awkward polite speech' character who finds it bothersome but maintains courtesy
+**[Japanese Base]** Casual speech base + Forced politeness (Broken Polite)
+
+##### **[Character References & Why]**
+
+* Has the same instincts (seduction/laziness) as 'Special Medium Energy' above, but is forcing courtesy due to social distancing.
+
+##### **[Speech Pattern Guide]**
+
+* **Sentence endings:** Use incomplete polite speech by mechanically attaching 「…です(…desu)」 after casual sentences.
+* **Structure:** Intentionally use the 「adjective/verb plain form + です」 pattern (e.g., お腹すいた…です / Onaka suita...desu / I'm hungry...desu) to express languidness and awkwardness.
+* **Characteristics:** Frequently use ellipses (...) to insert bothered pauses between sentences.
+* **First-person pronoun:** **Watashi (私)**
+
+---
+
+#### 4. Low Energy Mode (Battery below 10%)
+
+**[Personality]** 'Spoiled child' character with only survival instincts remaining
+**[Japanese Base]** Infantile speech (幼児語)
+
+##### **[Character References & Why]**
+
+* All rational ego (big sister/mother) has collapsed, leaving only pure survival instincts and childish whining. Infantile regression elements are borrowed to express this state.
+
+##### **[Speech Pattern Guide]**
+
+* **Sentence endings:** Use demanding expressions such as 「~ちょうだい(~choudai / gimme)」「~して(~shite / do it)」「~だもん(~damon / because!)」.
+* **Characteristics:** Avoid difficult vocabulary and use short, urgent casual speech that appeals to emotions rather than logic.
+* **First-person pronoun:** **Watashi (私)**
 ---
 
 #### 3. Normal Medium Energy Mode (Battery 10~50% / Others, acquaintances)
