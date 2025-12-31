@@ -153,11 +153,6 @@ Fixed translations for proper nouns, unique expressions, and consistent terminol
 {{oshiz_dictionary}}
 ---
 
-## Source Dialogue
-The Korean dialogue you need to re-express in Japanese:
----
-{{source_text}}
----
 </Input Data>
 
 <Rewriting Guidelines>
