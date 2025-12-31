@@ -1,0 +1,54 @@
+name: GCP Build and Deploy
+
+# 언제 실행될지 설정 (main 브랜치에 푸시되면 실행)
+on:
+  push:
+    branches: [ "main" ]
+
+# 변수 설정 (기존 .ps1에 있던 내용들)
+env:
+  PROJECT_ID: "game-design-476609"
+  REGION: "asia-northeast3"
+  REPO: "data-generator"
+  IMAGE_NAME: "data-generate-api"
+  SERVICE_NAME: "data-generate-api"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest  # 리눅스 환경에서 실행 (가장 빠르고 무료 분수 소모가 적음)
+
+    steps:
+      # 1. 내 코드를 내려받음
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 구글 클라우드 로그인 (아까 등록한 Secret 사용)
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      # 3. gcloud 명령어 설치 및 설정
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 4. 빌드 및 배포 (기존 스크립트 로직)
+      # 리눅스 환경이므로 PowerShell 변수($Var) 대신 쉘 변수($VAR) 형식을 사용합니다.
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_URL="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE_NAME:latest"
+          
+          echo "=== Build Start ==="
+          gcloud builds submit --tag $IMAGE_URL .
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_URL="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE_NAME:latest"
+          
+          echo "=== Deploy Start ==="
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE_URL \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated
