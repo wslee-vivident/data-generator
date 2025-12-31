@@ -10,6 +10,7 @@ export async function sendToGemini(inputText : string, systemPrompt: string) : P
         const result = await genAI.models.generateContent({
             model : "gemini-3-flash-preview",
             config : {
+                temperature : 0.5,
                 systemInstruction : {
                     parts : [{text : systemPrompt}]
                 },
