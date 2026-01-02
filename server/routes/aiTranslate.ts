@@ -5,7 +5,6 @@ import { sendToClaude } from "../services/anthropicAI";
 import { getSheetData, updateSheetData } from '../services/googleSheet';   
 import fs from "fs";
 import path from "path";
-import { batch } from 'googleapis/build/src/apis/batch';
 
 const router = express.Router();
 
