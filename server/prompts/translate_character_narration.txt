@@ -77,15 +77,16 @@ Fixed translations for proper nouns, unique expressions, and consistent terminol
 
 ---
 
-## Source Narration
+## Japanese narration examples
 
-The Korean narration you need to re-express in Japanese:
-
----
-
-{{source_text}}
-
----
+*Before you rewrite the script, you should refer to these speech pattern examples
+{{
+1. あなたは外から聞こえた激しい音に呼応するように、勢いよく事務所（自宅）のドアを開けた。
+2. すると、古びた廊下にはおよそ似つかわしくない女性が倒れていた。
+3. ドアの前に倒れていた女性は、苦しそうに身悶えている。
+4. 女性に見とれていたあなたは、彼女が起き上がろうとするのに気づき、目をそらした。
+5. あなたは女性の言葉に短く息を吐き、目を開けた。
+}}
 
 </Input Data>
 

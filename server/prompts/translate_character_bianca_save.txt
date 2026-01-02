@@ -216,7 +216,7 @@ Fixed translations for proper nouns, unique expressions, and consistent terminol
 2. あら？私、私が人間だなんて言った覚えないんだけど？
 3. なんでも？好きかってでも？
 4. 色々と、自信がおありのようだね？
-5. ご馳走様でした♥
+5. ご馳走様でした♥"
 }}
 
 </Input Data>
