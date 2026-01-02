@@ -1,7 +1,7 @@
 import express from 'express';
 import { sendToOpenAI } from "../services/openAI";
 import { sendToGemini } from "../services/googleGemini";
-import { sendToClaude } from 'server/services/anthropicAI';
+import { sendToClaude } from "../services/anthropicAI";
 import { getSheetData, updateSheetData } from '../services/googleSheet';   
 import fs from "fs";
 import path from "path";
