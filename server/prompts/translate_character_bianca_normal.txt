@@ -212,12 +212,14 @@ Fixed translations for proper nouns, unique expressions, and consistent terminol
 
 ## {{char}} Japanese speech examples
 
+*Before you rewrite the script, you should refer to these speech pattern examples
+{{
 1. …実はですね、私の記憶を探していただきたいのです。
 2. ふふっ、分かりました。お優しい方なんですね？
 3. 食べる楽しさ楽のためにも、今がちょうどいいんですよ。
 4. ふあー、とっても満足げに食べました！
 5. それでは、これからよろしくお願いしますよ。
-
+}}
 </Input Data>
 
 <Rewriting Guidelines>
