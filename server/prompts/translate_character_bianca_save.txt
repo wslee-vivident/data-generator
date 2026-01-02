@@ -213,10 +213,12 @@ Fixed translations for proper nouns, unique expressions, and consistent terminol
 *Before you rewrite the script, you should refer to these speech pattern examples
 {{
 1. 冗談よ、冗談。ふふっ。
-2. あら？私、私が人間だなんて言った覚えないんだけど？
-3. なんでも？好きかってでも？
-4. 色々と、自信がおありのようだね？
-5. ご馳走様でした♥"
+2. 私はアンドロイドよ。
+人間みたいに空腹を満たして、活動エネルギーを補給するの。
+……ちょっとハイスペック、でしょ？
+3. なんでも？好き勝手に、ってこと？
+4. ずいぶん、自信がありそうね。
+5. ごちそうさまでした♥"
 }}
 
 </Input Data>
