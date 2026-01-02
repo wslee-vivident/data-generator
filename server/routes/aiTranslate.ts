@@ -290,40 +290,4 @@ function loadPrompt(fileName : string, fallbackFileName? : string) : string {
     return ""
 }
 
-
-async function mergeSheetDataSafe(
-    sheetId : string,
-    sheetName : string, 
-    newTranslations : Record<string, Record<string, string>>
-) :Promise<Record<string, any>[]> {
-    const existingRows = await getSheetData(sheetId, sheetName);
-
-    // 2. key 기준 rowMap
-    const rowMap = new Map<string, Record<string, any>>();
-    existingRows.forEach((row : any) => {
-        const k = String(row.key ?? "").trim();
-        if (k) rowMap.set(k, {...row});
-    });
-
-    // 3. 병합 : 빈 값이면 기존 유지
-    for(const [lang, langMap] of Object.entries(newTranslations)) {
-        for(const [key, text] of Object.entries(langMap)) {
-            const normalizedKey = String(key ?? "").trim();
-            if(!normalizedKey) continue;
-
-            const existing = rowMap.get(normalizedKey) || { key : normalizedKey };
-
-            // ✅ 새 번역이 유효할 때만 덮어쓰기
-            if(text && text.trim() !== "") {
-                existing[lang] = text;
-            }
-
-            rowMap.set(normalizedKey, existing);
-        }
-    }
-    
-
-    return Array.from(rowMap.values());
-}
-
 export default router;

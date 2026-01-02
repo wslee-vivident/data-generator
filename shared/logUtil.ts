@@ -19,3 +19,23 @@ export function writeLog(fileName : string, content : string | object) : void {
         console.error("❌ 로그 저장 실패:", err);
     }
 }
+
+export function loadPrompt(fileName : string, fallbackFileName? : string) : string {
+    try {
+        const filePath = path.resolve(process.cwd(), "prompts", fileName);
+        if(fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf8');
+        }
+    } catch (e) { /* ignore */ }
+
+    if(fallbackFileName) {
+        try {
+            const fallbackPath = path.resolve(process.cwd(), "prompts", fallbackFileName);
+            return fs.readFileSync(fallbackPath, 'utf8');
+        } catch (e) { 
+            console.error('Prompt file not found:', fallbackFileName);
+        }
+    }
+
+    return ""
+}
