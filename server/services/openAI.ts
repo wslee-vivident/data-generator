@@ -16,7 +16,7 @@ export async function sendToOpenAI(inputText:string, systemPrompt: string): Prom
                 { role: "system", content: systemPrompt },
                 { role : "user", content : inputText }
             ],
-            temperature : 0.3,
+            temperature : 0.5,
             reasoning : { effort : "none" },
             max_output_tokens : 4096,
         });
