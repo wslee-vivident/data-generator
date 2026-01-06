@@ -21,6 +21,9 @@ router.post("/story-generate", async (req, res) => {
             ) {
                 return res.status(400).json({error : "Invalid data format"});
             }
+
+            const obj = parseSheetDataToObjects(data);
+            console.log(obj);
     
            
             return res.status(200).json({ status: "OK"});
