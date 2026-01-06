@@ -12,9 +12,6 @@ app.get("/", (req, res) => {
 
 app.use(bodyParser.json({ limit: '10mb' })); // 요청 본문 크기 제한 설정
 app.use("/api", driveCopyRouter); //구글 드라이브 이미지 복사 경로 등록
-
-
-app.use(express.json()); //JSON 파싱 미들웨어
 app.use("/ai", batchTranslate); //ai 경로 등록
 app.use("/ai-create", storyGenerate); //스토리 생성기 경로 등록
 
