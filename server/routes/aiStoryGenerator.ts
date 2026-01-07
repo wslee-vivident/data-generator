@@ -1,41 +1,62 @@
 import express from 'express';
-import fs from "fs";
 import path from "path";
-import { updateSheetData } from 'server/services/googleSheet';
-//import { StoryOrchestrator } from 'server/services/storyOrchestrator';
-import { StoryRowData } from '../types'
+import { parseSheetToObject } from '@shared/helpUtil';
+import { loadPrompt } from '@shared/helpUtil';
+import { StoryOrchestrator  } from 'server/services/storyOrchestrator';
+import { updateStoryResults  } from 'server/services/googleSheet';
+import { StoryRowData } from 'server/types';
+
 
 
 const router = express.Router();
 
-// GAS에서 보내는 순서대로 매핑 (GAS 스크립트의 resultHeader 참고)
-const COLUMN_MAP = [
-    "sceneId", "key", "speaker", "emotion", "level", 
-    "direction", "location", "innerThought", 
-    "narrationTone", "writingStyle", "introContext", "model"
-];
 
 router.post("/story-generate", async (req, res) => {
-     console.log("📥 Received generation request");
+    console.log("📥 [POST] /story-generate");
     try {
-            const { data, dictionary, sheetName, sheetId, promptFile } = req.body;
+        const { data, dictionary, sheetName, sheetId, promptFile } = req.body;
 
-             // 1. 유효성 검사
-            if (!data || !Array.isArray(data) || data.length === 0) {
-                return res.status(400).json({ error: "Invalid data format" });
-            }
-
-             // 2. 데이터 파싱 (Array -> StoryRowData[])
-            // GAS는 헤더 없이 값만 배열로 보낸다고 가정 (GAS 코드 확인 결과 값 배열들의 배열임)
-
-
-            
-            return res.status(200).json({ status: "OK"});
-    
-        } catch (err) {
-            console.error("Error in /ai/batch-group-translate", err);
-            res.status(500).json({ error: "Internal Server Error" });
+        // 1. 입력값 검증
+        if (!data || !Array.isArray(data) || data.length < 2) {
+            return res.status(400).json({ error: "Invalid data format (Header required)" });
         }
+        if (!promptFile) {
+            return res.status(400).json({ error: "promptFile is required" });
+        }
+
+        // 2. 데이터 파싱
+        const storyRows: StoryRowData[] = parseSheetToObject(data);
+        console.log(`Parsed ${storyRows.length} rows.`);
+
+        // 3. 메인 프롬프트 템플릿 로드
+        const mainTemplate = loadPrompt(promptFile);
+        if (!mainTemplate) {
+            throw new Error(`Main prompt file not found: ${promptFile}`);
+        }
+
+        // 4. 오케스트레이션 실행
+        // (내부에서 캐릭터별 프롬프트 파일을 동적으로 로드함)
+        const orchestrator = new StoryOrchestrator(storyRows, mainTemplate, dictionary);
+        const finalResults = await orchestrator.generateAll();
+
+        // 5. 시트 업데이트 (Batch)
+        // 기존 코드의 mergeTranslationsInMemory + updateSheetData 로직을 활용
+        if (finalResults.length > 0) {
+             console.log("💾 Updating sheet...");
+             await updateStoryResults(sheetId, sheetName, finalResults);
+        }
+
+        // 6. 결과 응답
+        return res.status(200).json({
+            status: "OK",
+            count: finalResults.length,
+            results: finalResults
+        });
+
+    } catch (err: any) {
+        console.error("🔥 Critical Error:", err);
+        res.status(500).json({ error: err.message || "Internal Server Error" });
+    }
 });
 
 export default router;

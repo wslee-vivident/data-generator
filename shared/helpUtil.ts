@@ -21,8 +21,10 @@ export function writeLog(fileName : string, content : string | object) : void {
 }
 
 export function loadPrompt(fileName : string, fallbackFileName? : string) : string {
+    const promptDir = path.resolve(process.cwd(), "prompts");
+
     try {
-        const filePath = path.resolve(process.cwd(), "prompts", fileName);
+        const filePath = path.join(promptDir, fileName);
         if(fs.existsSync(filePath)) {
             return fs.readFileSync(filePath, 'utf8');
         }
@@ -30,12 +32,33 @@ export function loadPrompt(fileName : string, fallbackFileName? : string) : stri
 
     if(fallbackFileName) {
         try {
-            const fallbackPath = path.resolve(process.cwd(), "prompts", fallbackFileName);
-            return fs.readFileSync(fallbackPath, 'utf8');
+            const fallbackPath = path.join(promptDir, fallbackFileName);
+            if(fs.existsSync(fallbackPath)) {
+                return fs.readFileSync(fallbackPath, 'utf8');
+            }
         } catch (e) { 
             console.error('Prompt file not found:', fallbackFileName);
         }
     }
 
-    return ""
+    return "";
+}
+
+export function parseSheetToObject(data: any[][]): any[] {
+    if (!data || !Array.isArray(data) || data.length < 2) {
+        return [];
+    }
+
+    const headers = data[0].map(h => String(h).trim()); // 첫 줄: 헤더
+    const rows = data.slice(1); // 나머지: 데이터
+
+    return rows.map(row => {
+        const obj: any = {};
+        headers.forEach((header, index) => {
+            // 헤더 이름과 매칭하여 객체 생성
+            // 값이 없으면 빈 문자열 처리
+            obj[header] = row[index] ?? "";
+        });
+        return obj;
+    });
 }

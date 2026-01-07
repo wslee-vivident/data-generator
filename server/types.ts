@@ -6,14 +6,15 @@ export interface StoryRowData {
     level: string | number;
     direction: string;
     location: string;
-    innerThought: Record<string, string> | string; // JSON 객체 혹은 문자열
+    innerThought: any;
     narrationTone: string;
     writingStyle: string;
     introContext: string;
     model: string;
+    temperature : number;
 }
 
-export interface GenerationResult {
+export interface StoryResult {
     key: string;
-    generatedText: string;
+    result: string;
 }

@@ -22,6 +22,7 @@ toggle = need to be under 20 characters.
 option = need to be under 20 characters.
 dropdown = need to be under 20 characters.
 etc = follow the length which origin word has.
+characterDialog = this is character's dialog you have to follow the length which origin word has.
 
 [2] (the last param in the array) = text -> translate it.
 - please translate the text in same characters length within original English text as possible as you can using a suitable word focused on the target country context.
