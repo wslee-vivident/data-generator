@@ -40,7 +40,7 @@ export class StoryOrchestrator {
                 let generatedText = "";
                 let inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`
                 const modelKey = (row.model || "").toLowerCase();
-                const temperature = (row.temperature || 0.5);
+                const temperature = parseFloat(String(row.temperature || "0.5"));
                 
                 switch (modelKey) {
                     case "claude" :
