@@ -56,7 +56,7 @@ export async function sendToGeminiWithTemperature(inputText : string, systemProm
                     parts : [{text : systemPrompt}]
                 },
                 thinkingConfig : {
-                    thinkingLevel : ThinkingLevel.LOW,
+                    thinkingLevel : ThinkingLevel.MINIMAL,
                     includeThoughts : false
                 }
             },
