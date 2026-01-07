@@ -24,7 +24,7 @@ export class PromptEngine {
         } else if (String(row.speaker) === "narration") {
             charFileName = `story_character_narration.txt`;
         } else  {
-            charFileName = `story_character_etc.txt`;
+            charFileName = `Name: ${row.speaker}`;
         }
 
         const characterProfile = loadPrompt(charFileName); // fallback 없음 (없으면 비워둠)
@@ -36,7 +36,7 @@ export class PromptEngine {
             "{{NarrationTone}}": row.narrationTone,
             "{{WritingStyle}}": row.writingStyle,
             "{{IntroContext}}": row.introContext,
-            "{{speaker}}": characterProfile || `Name: ${row.speaker}`,
+            "{{speaker}}": characterProfile,
             "{{emotion}}": row.emotion,
             "{{direction}}": row.direction,
             "{{key}}": row.key,
