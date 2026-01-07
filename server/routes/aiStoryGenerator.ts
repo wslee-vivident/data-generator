@@ -33,12 +33,30 @@ router.post("/story-generate", async (req, res) => {
             throw new Error(`Main prompt file not found: ${promptFile}`);
         }
 
-        // 4. 오케스트레이션 실행
-        // (내부에서 캐릭터별 프롬프트 파일을 동적으로 로드함)
-        const orchestrator = new StoryOrchestrator(storyRows, mainTemplate, dictionary);
-        const finalResults = await orchestrator.generateAll();
+        //SceneId 별로 데이터 그룹화
+        const groupedRows = groupRowsBySceneId(storyRows);
+        const sceneIds = Object.keys(groupedRows);
 
-        // 5. 시트 업데이트 (Batch)
+        console.log(`📌 Identified ${sceneIds.length} scenes: [${sceneIds.join(", ")}]`);
+
+        //각 씬(Scene)별 병렬 처리 (Parallel Execution)
+        const tasks = Object.entries(groupedRows).map(async ([sceneIds, rows]) => {
+            console.log(`🚀 Generating stories for Scene ID: ${sceneIds} with ${rows.length} rows.`)
+            
+            const orchestrator = new StoryOrchestrator(rows, mainTemplate, dictionary);
+            const results = await orchestrator.generateAll();
+
+            console.log(`✅ Completed Scene ID: ${sceneIds}, generated ${results.length} lines story.`);
+            return results;
+        });
+
+         // 모든 씬의 작업이 끝날 때까지 대기
+        const resultsArrays = await Promise.all(tasks);
+        
+        // 결과 평탄화 (Array of Arrays -> Single Array)
+        const finalResults: StoryResult[] = resultsArrays.flat();
+
+        // 5. 시트 업데이트
         // 기존 코드의 mergeTranslationsInMemory + updateSheetData 로직을 활용
         if (finalResults.length > 0) {
             console.log("💾 Applying generated stories to sheet...");
@@ -69,6 +87,24 @@ router.post("/story-generate", async (req, res) => {
         res.status(500).json({ error: err.message || "Internal Server Error" });
     }
 });
+
+/**
+ * 데이터를 sceneId 기준으로 그룹화하는 헬퍼 함수
+ */
+function groupRowsBySceneId(rows : StoryRowData[]) : Record<string, StoryRowData[]> {
+    const groups : Record<string, StoryRowData[]> = {};
+
+    for(const row of rows) {
+        // SceneId가 비어있으면 "unknown" 그룹으로
+        const sceneId = row.sceneId ? row.sceneId.trim() : "unknown";
+
+        if(!groups[sceneId]) {
+            groups[sceneId] = [];
+        }
+        groups[sceneId].push(row);
+    }
+    return groups;
+}
 
 function mergeStoryResultsInMemory(
     originalRows: any[],
