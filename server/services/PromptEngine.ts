@@ -1,5 +1,5 @@
 import { StoryRowData } from '../types';
-import { loadPrompt } from '@shared/helpUtil';
+import { loadPrompt } from '../../shared/helpUtil';
 
 export class PromptEngine {
     private mainTemplate : string;

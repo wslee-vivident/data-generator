@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { StoryResult } from 'server/types'; 
+import { StoryResult } from '../types'; 
 
 // ✅ 1. 인증 객체 생성 (서비스 계정용)
 const auth = new google.auth.GoogleAuth({

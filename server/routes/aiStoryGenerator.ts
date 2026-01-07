@@ -1,10 +1,9 @@
 import express from 'express';
 import path from "path";
-import { parseSheetToObject } from '@shared/helpUtil';
-import { loadPrompt } from '@shared/helpUtil';
-import { StoryOrchestrator  } from 'server/services/storyOrchestrator';
-import { updateStoryResults  } from 'server/services/googleSheet';
-import { StoryRowData } from 'server/types';
+import { parseSheetToObject, loadPrompt } from '../../shared/helpUtil';
+import { StoryOrchestrator  } from '../services/storyOrchestrator';
+import { updateStoryResults  } from '../services/googleSheet';
+import { StoryRowData } from '../types';
 
 
 

@@ -1,8 +1,8 @@
-import { StoryRowData, StoryResult } from "server/types";
+import { StoryRowData, StoryResult } from "../types";
 import { PromptEngine } from "./PromptEngine";
-import { sendToOpenAI } from "./openAI";
-import { sendToGemini } from "./googleGemini";
-import { sendToClaude } from "./anthropicAI";
+import { sendToOpenAIWithTemperature } from "./openAI";
+import { sendToGeminiWithTemperature } from "./googleGemini";
+import { sendToClaudeWithTemperature } from "./anthropicAI";
 
 export class StoryOrchestrator {
     private rows: StoryRowData[];
@@ -38,19 +38,23 @@ export class StoryOrchestrator {
 
                 // 2. 모델 분기 처리
                 let generatedText = "";
+                let inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`
                 const modelKey = (row.model || "").toLowerCase();
+                const temperature = (row.temperature || 0.5);
                 
-                /*
-                if (modelKey.includes("gemini")) {
-                    generatedText = await sendToGemini(prompt);
-                } else if (modelKey.includes("claude")) {
-                    // generatedText = await sendToClaude(prompt); 
-                    generatedText = "[Claude Not Implemented]"; // 예시
-                } else {
-                    // Default: OpenAI
-                    generatedText = await sendToOpenAI(prompt, "gpt-4o"); 
+                switch (modelKey) {
+                    case "claude" :
+                        generatedText = await sendToClaudeWithTemperature(inputText, prompt, temperature);
+                        break;
+                    case "gpt" :
+                        generatedText = await sendToOpenAIWithTemperature(inputText, prompt, temperature);
+                        break;
+                    case "gemini"  :
+                        generatedText = await sendToGeminiWithTemperature(inputText, prompt, temperature);
+                        break;
+                    default:
+                        throw new Error(`Unsupported model type: ${modelKey}`);
                 }
-                */
 
                 // 3. 결과 파싱 (CSV 포맷 "key, text"에서 text만 추출)
                 const cleanText = this.parseOutput(generatedText, row.key);

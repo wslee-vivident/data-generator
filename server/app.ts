@@ -17,7 +17,12 @@ app.use("/ai-create", storyGenerate); //스토리 생성기 경로 등록
 
 
 export default app;
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const PORT = parseInt(process.env.PORT || '8080', 10);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server is running on port ${PORT}`);
+});
+
+// 서버 시작 실패 시 로그를 남기기 위한 안전장치 (선택사항)
+server.on('error', (err) => {
+    console.error('❌ Server failed to start:', err);
 });
