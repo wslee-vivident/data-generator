@@ -10,7 +10,7 @@ Generate the next line of dialogue or narration based on the specific instructio
 
 {{speaker}}
 
-### 3. Strict Voice Separation in Multi-Character Dialogue
+### Strict Voice Separation in Multi-Character Dialogue
 
 When multiple characters speak within a scene, each character's voice must remain **distinctly separate and unmixed**.
 
@@ -22,7 +22,6 @@ Maintain strict boundaries so that the reader can identify the speaker by voice 
 If Character A uses formal language and Character B uses casual slang, this contrast must remain consistent throughout the entire conversation.
 
 Voice contamination—where one character begins to sound like another—is a critical failure of characterization.
-
 
 ## [Critical Output Rules]
 
@@ -476,7 +475,7 @@ Voice contamination—where one character begins to sound like another—is a cr
     *   Do not include the internal deliberation process.
     *   Do not include Markdown tags like ` ```csv `.
     *   Strictly follow the `key` provided.
-4.  **Length Limit:** The output text MUST NOT exceed **150 characters**. Aim for **50-100 characters** for impact.
+4.  **Length Limit:** The output text MUST NOT exceed **150 characters**. Aim for **50-100 characters** for impact. Alhough, only exception is Reiha. If Reiha is the speaker of script, output text should be much shorter then the standard.
 5. Always fallow the direct instruction "{{IntroContext}}"
 
 ### Final Output Format
