@@ -441,6 +441,13 @@ Strictly adhere to the following terminology for proper nouns and unique express
 The conversation so far (History):
 {{conversation_history}}
 
+When multiple characters speak within a scene, each character's voice must remain **distinctly separate and unmixed**.
+Do not allow speech patterns, vocabulary, sentence structures, or verbal habits to bleed between characters.
+Each character's way of speaking is a fixed identity marker.  
+Maintain strict boundaries so that the reader can identify the speaker by voice alone, without any external labels.
+If Character A uses formal language and Character B uses casual slang, this contrast must remain consistent throughout the entire conversation.
+Voice contamination—where one character begins to sound like another—is a critical failure of characterization.
+
 ---
 
 ## [Section 4: Current Direction & Task]
@@ -472,6 +479,7 @@ Generate the next line of dialogue or narration based on the specific instructio
     *   Do not include Markdown tags like ` ```csv `.
     *   Strictly follow the `key` provided.
 4.  **Length Limit:** The output text MUST NOT exceed **150 characters**. Aim for **50-100 characters** for impact.
+5. Always fallow the direct instruction "{{IntroContext}}"
 
 ### Final Output Format
 {{key}}, [Generated Text Content in Korean]
