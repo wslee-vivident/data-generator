@@ -1,8 +1,9 @@
 import { StoryRowData, StoryResult } from "../types";
 import { PromptEngine } from "./PromptEngine";
-import { sendToOpenAIWithTemperature } from "./openAI";
-import { sendToGeminiWithTemperature } from "./googleGemini";
-import { sendToClaudeWithTemperature } from "./anthropicAI";
+import { sendToOpenAI } from "./openAI";
+import { sendToGemini } from "./googleGemini";
+import { sendToClaude } from "./anthropicAI";
+import { send } from "process";
 
 export class StoryOrchestrator {
     private rows: StoryRowData[];
@@ -30,7 +31,7 @@ export class StoryOrchestrator {
                 continue;
             }
 
-            console.log(`\n▶ Processing [${row.key}] Speaker: ${row.speaker}`);
+            //console.log(`\n▶ Processing [${row.key}] Speaker: ${row.speaker}`);
 
             try {
                 // 1. 프롬프트 생성 (여기서 캐릭터 파일도 자동 로드됨)
@@ -44,13 +45,13 @@ export class StoryOrchestrator {
                 
                 switch (modelKey) {
                     case "claude" :
-                        generatedText = await sendToClaudeWithTemperature(inputText, prompt, temperature);
+                        generatedText = await sendToClaude(inputText, prompt, temperature);
                         break;
                     case "gpt" :
-                        generatedText = await sendToOpenAIWithTemperature(inputText, prompt, temperature);
+                        generatedText = await sendToOpenAI(inputText, prompt, temperature);
                         break;
                     case "gemini"  :
-                        generatedText = await sendToGeminiWithTemperature(inputText, prompt, temperature);
+                        generatedText = await sendToGemini(inputText, prompt, temperature);
                         break;
                     default:
                         throw new Error(`Unsupported model type: ${modelKey}`);
@@ -68,7 +69,7 @@ export class StoryOrchestrator {
                     result: cleanText
                 });
 
-                console.log(`   ✅ Output: ${cleanText.substring(0, 40)}...`);
+                //console.log(`   ✅ Output: ${cleanText.substring(0, 40)}...`);
 
             } catch (error) {
                 console.error(`   ❌ Error:`, error);

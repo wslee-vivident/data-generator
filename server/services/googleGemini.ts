@@ -1,6 +1,10 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
-export async function sendToGemini(inputText : string, systemPrompt: string) : Promise<string> {
+export async function sendToGemini(
+    inputText : string, 
+    systemPrompt: string,
+    temperature: number = 0.5
+) : Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if(!apiKey) throw new Error('Gemini API key is not set in environment variables.');
 
@@ -10,7 +14,7 @@ export async function sendToGemini(inputText : string, systemPrompt: string) : P
         const result = await genAI.models.generateContent({
             model : "gemini-3-flash-preview",
             config : {
-                temperature : 0.5,
+                temperature : temperature,
                 systemInstruction : {
                     parts : [{text : systemPrompt}]
                 },
