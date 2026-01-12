@@ -75,10 +75,22 @@ export class PromptEngine {
         const MAX_HISTORY_LINES = 20;
         const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
 
-        const characterProfile = this.loadSpeakerProfile(speakerName, level);
+        let charFileName = "";
+        if(String(level).trim() !== "" && level !== null && level !== undefined) {
+            charFileName = `story_character_${speakerName}_${level}.txt`;
+        } else if (String(speakerName) === "player") {
+            charFileName = `story_character_player.txt`;
+        } else if (String(speakerName) === "narration") {
+            charFileName = `story_character_narration.txt`;
+        } else  {
+            charFileName = `Name: ${speakerName}`;
+        }
+        // 3. 파일 로드 시도
+        const content = loadPrompt(charFileName);
+
 
         return {
-            "{{speaker}}" : characterProfile,
+            "{{speaker}}" : content || `Name: ${speakerName}`,
             "{{conversation_history}}" : recentHistory || "(대화 시작)",
             "{{emotion}}" : row['emotion'] || "",
             "{{introContext}}" : row['introContext'] || "",
@@ -113,33 +125,6 @@ export class PromptEngine {
             "{{systemKind}}" : systemPrompt,
             "{{script_history}}" : recentHistory || "(대화 시작)",
         }
-    }
-
-    private loadSpeakerProfile(speaker : string, level?: string | number) : string {
-        if(!speaker) return "";
-
-        let charFileName = "";
-        if(String(level).trim() !== "" && level !== null && level !== undefined) {
-            charFileName = `story_character_${speaker}_${level}.txt`;
-        } else if (String(speaker) === "player") {
-            charFileName = `story_character_player.txt`;
-        } else if (String(speaker) === "narration") {
-            charFileName = `story_character_narration.txt`;
-        } else  {
-            charFileName = `Name: ${speaker}`;
-        }
-        // 3. 파일 로드 시도
-        const content = loadPrompt(charFileName);
-
-        // 4. [안전장치] 파일이 없을 경우
-        // 파일이 없어서 빈 문자열("")이 리턴되면 LLM은 캐릭터 정보를 모르게 됩니다.
-        // 최소한 이름이라도 넘겨줘야 LLM이 이름만 보고라도 연기를 시도합니다.
-        if (!content) {
-            // console.warn(`⚠️ Warning: Prompt file '${fileName}' not found for speaker '${cleanSpeaker}'.`);
-            return `Name: ${speaker}`; 
-        }
-
-        return content;
     }
 }
 
