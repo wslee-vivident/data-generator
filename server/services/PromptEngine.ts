@@ -1,5 +1,7 @@
-import { StoryRowData } from '../types';
+import { BaseStoryRow } from '../types';
 import { loadPrompt } from '../../shared/helpUtil';
+
+export type GenerationMode = 'single_line' | 'full_script';
 
 export class PromptEngine {
     private mainTemplate : string;
@@ -13,35 +15,30 @@ export class PromptEngine {
             .join("\n");
     }
 
-    public buildPrompt(row: StoryRowData, history: string[]): string {
-        // 1. 캐릭터별 전용 프롬프트 파일 로드 (예: prompt_character_비앙카.txt)
-        // 파일이 없으면 빈 문자열 혹은 기본값 사용
-        let charFileName = "";
-        if(String(row.level).trim() !== "" && row.level !== null && row.level !== undefined) {
-            charFileName = `story_character_${row.speaker}_${row.level}.txt`;
-        } else if (String(row.speaker) === "player") {
-            charFileName = `story_character_player.txt`;
-        } else if (String(row.speaker) === "narration") {
-            charFileName = `story_character_narration.txt`;
-        } else  {
-            charFileName = `Name: ${row.speaker}`;
+
+    //모드에 따라 적절한 컨텍스트를 준비하고 프롬프트를 생성합니다.
+    public buildPrompt(row: BaseStoryRow, history: string[], mode: GenerationMode): string {
+
+        const commonReplacements : Record<string, string> = {
+            "{{oshiz_dictionary}}" : this.dictionary,
+            "{{scene_id}}" : row.sceneId || "",
+            "{{key}}" : row['key'] || "",
+            "{{Location}}" : row['location'] || "",
+            "{{direction}}" : row['direction'] || "",
+
+        };
+
+        let specificReplacements : Record<string, string> = {};
+
+        if(mode === 'single_line') {
+            specificReplacements = this.prepareSingleLineContext(row, history);
+        } else if (mode === 'full_script') {
+            specificReplacements = this.prepareFullStoryContext(row, history);
         }
 
-        const characterProfile = loadPrompt(charFileName); // fallback 없음 (없으면 비워둠)
-
-        // 2. 기본 치환 맵 구성
-        const replacements: Record<string, string> = {
-            "{{scene_id}}": row.sceneId,
-            "{{Location}}": row.location,
-            "{{NarrationTone}}": row.narrationTone,
-            "{{WritingStyle}}": row.writingStyle,
-            "{{IntroContext}}": row.introContext,
-            "{{speaker}}": characterProfile,
-            "{{emotion}}": row.emotion,
-            "{{direction}}": row.direction,
-            "{{key}}": row.key,
-            "{{oshiz_dictionary}}": this.dictionary
-        };
+        //데이터 병합
+        const finalReplacements = { ...commonReplacements, ...specificReplacements };
+        
 
         // 3. Inner Thought 처리
         let innerThoughtText = "None";
@@ -52,22 +49,96 @@ export class PromptEngine {
             } else if (typeof row.innerThought === 'string' && row.innerThought.trim() !== "") {
                 innerThoughtText = row.innerThought;
             }
+            finalReplacements["{{innerThought}}"] = innerThoughtText;
         }
-        replacements["{{innerThought}}"] = innerThoughtText;
-
-        // 4. History 처리
-        const MAX_HISTORY_LINES = 20;
-        const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
-        replacements["{{conversation_history}}"] = recentHistory || "(대화 시작)";
 
         // 5. 템플릿 치환 실행
         let finalPrompt = this.mainTemplate;
-        for (const [key, value] of Object.entries(replacements)) {
+        for (const [key, value] of Object.entries(finalReplacements)) {
             const regex = new RegExp(key, "g");
             finalPrompt = finalPrompt.replace(regex, value || "");
         }
 
         return finalPrompt;
+    }
+
+    // =================================================================
+    //  Private Helper Methods (Context Providers)
+    // =================================================================
+
+    private prepareSingleLineContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
+        const speakerName = row['speaker'] || "";
+        const level = String(row['level'] || "");
+        const MAX_HISTORY_LINES = 20;
+        const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
+
+        const characterProfile = this.loadSpeakerProfile(speakerName, level);
+
+        return {
+            "{{speaker}}" : characterProfile,
+            "{{conversation_history}}" : recentHistory || "(대화 시작)",
+            "{{emotion}}" : row['emotion'] || "",
+            "{{introContext}}" : row['direction'] || "",
+            "{{narrationTone}}" : row['narrationTone'] || "",
+            "{{writingStyle}}" : row['writingStyle'] || ""
+        }
+    }
+
+    private prepareFullStoryContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
+        const charName = row['character'] || "";
+        const level = String(row['level'] || "");
+
+        let heroineProfile = "";
+        if(charName) {
+            heroineProfile = loadPrompt(`story_character_${charName}_${level}.txt`);
+        }
+
+        const playerProfile = loadPrompt(`story_character_player.txt`);
+        const systemKind = row['systemKind'] || "";
+        let systemPrompt = "";
+        if(systemKind) {
+            systemPrompt = loadPrompt(`story_system_${systemKind}.txt`);
+        }
+
+        const MAX_HISTORY_LINES = 15;
+        const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
+
+        return {
+            "{{player_info}}" : playerProfile,
+            "{{character_info}}" : heroineProfile,
+            "{{place}}" : row['place'] || "",
+            "{{systemKind}}" : systemPrompt,
+            "{{emotions}}" : row['emotions'] || "",
+            "{{script_history}}" : recentHistory || "(대화 시작)",
+        }
+    }
+
+    private loadSpeakerProfile(speaker : string, level?: string | number) : string {
+        if(!speaker) return "";
+
+        let fileName = "";
+        const cleanSpeaker = String(speaker).trim();
+
+        // 1. 플레이어
+        if (cleanSpeaker === "player" || cleanSpeaker === "주인공") {
+            fileName = `story_character_player.txt`;
+        } 
+        // 2. 나레이션
+        else if (cleanSpeaker === "narration" || cleanSpeaker === "지문") {
+            fileName = `story_character_narration.txt`;
+        } 
+        // 3. 일반 캐릭터 (레벨 체크)
+        else {
+            if (level !== undefined && level !== null && String(level).trim() !== "") {
+                fileName = `story_character_${cleanSpeaker}_${level}.txt`;
+            } else {
+                // 여기서는 파일이 있다고 가정하거나, fallback으로 이름만 리턴
+                fileName = `story_character_${cleanSpeaker}_1.txt`; // 필요하면 활성화 
+            }
+        }
+
+        // 파일 로드 시도
+        return loadPrompt(fileName);
     }
 }
 
