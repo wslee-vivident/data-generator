@@ -32,4 +32,10 @@ export interface FullStoryRowData extends BaseStoryRow {
 export interface StoryResult {
     key: string;
     result: string;
+    sceneId? : string;
+    speaker? : string;
+    emotion? : string;
+    text? : string;
+    choice_grade? : string;
+    reply_text? : string;
 }

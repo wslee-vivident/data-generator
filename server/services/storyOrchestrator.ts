@@ -61,7 +61,16 @@ export class StoryOrchestrator {
                     // [Full Script 모드]
                     // LLM이 여러 줄의 CSV를 뱉음 -> 파싱해서 여러 개의 Result로 변환
                     const parsedLines = this.parseFullScriptCSV(rawOutput);
-                    results.push(...parsedLines);
+                    results.push({
+                        sceneId : row['sceneId'],
+                        speaker : parsedLines.map(pl => pl.speaker).join("\n"),
+                        emotion : parsedLines.map(pl => pl.emotion).join("\n"),
+                        text : parsedLines.map(pl => pl.text).join("\n"),
+                        choice_grade : parsedLines.map(pl => pl.choice_grade).join("\n"),
+                        reply_text : parsedLines.map(pl => pl.reply_text).join("\n"),
+                        key: row['key'] || "",
+                        result: "" // Full Script 모드에서는 result 필드를 비워둠
+                    });
                     
                     // 히스토리에 전체 대화 내용을 요약해서 넣거나, 마지막 대사를 넣음
                     this.history.push(...parsedLines.map(line => line.result));

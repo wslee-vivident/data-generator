@@ -81,7 +81,7 @@ export class PromptEngine {
             "{{speaker}}" : characterProfile,
             "{{conversation_history}}" : recentHistory || "(대화 시작)",
             "{{emotion}}" : row['emotion'] || "",
-            "{{introContext}}" : row['direction'] || "",
+            "{{introContext}}" : row['introContext'] || "",
             "{{narrationTone}}" : row['narrationTone'] || "",
             "{{writingStyle}}" : row['writingStyle'] || ""
         }
