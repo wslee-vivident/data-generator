@@ -124,10 +124,10 @@ export class PromptEngine {
 
         // 1. 특수 역할(주인공, 나레이션) 한글 -> 영문 파일명 매핑
         // 시트에 "주인공", "지문", "나레이션" 등으로 적혀있을 경우를 처리해야 합니다.
-        if (cleanSpeaker === "주인공" || cleanSpeaker === "player" || cleanSpeaker === "{{user}}") {
+        if (cleanSpeaker === "player") {
             fileName = "story_character_player.txt";
         } 
-        else if (cleanSpeaker === "나레이션" || cleanSpeaker === "지문" || cleanSpeaker === "narration") {
+        else if (cleanSpeaker === "narration") {
             fileName = "story_character_narration.txt";
         } 
         // 2. 일반 캐릭터 처리
