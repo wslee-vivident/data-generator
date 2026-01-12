@@ -8,6 +8,12 @@ export async function sendToClaude(
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if(!apiKey) throw new Error("Anthropic API key is not set in environment variables.");
 
+    let safeTemperature = Number(temperature);
+    if(isNaN(safeTemperature) || safeTemperature < 0 || safeTemperature > 1) {
+        console.warn(`Invalid temperature value: ${temperature}. Using default 0.5.`);
+        safeTemperature = 0.5;
+    }
+
     // Anthropic 클라이언트 초기화
     const anthropic = new Anthropic({
         apiKey : apiKey,
