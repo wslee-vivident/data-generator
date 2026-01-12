@@ -95,7 +95,7 @@ export class StoryOrchestrator {
 
     // 신규 방식 파서 (Full Script) - 안전 장치 및 컬럼 매핑 강화
     private parseFullScriptCSV(text: any): StoryResult[] {
-        // 1. 입력값 안전 검증 (split 에러 방지)
+        // 1. 입력값 안전 검증
         if (!text) {
             console.warn("⚠️ parseFullScriptCSV received empty input.");
             return [];
@@ -103,9 +103,8 @@ export class StoryOrchestrator {
 
         let rawString = "";
         
-        // 만약 LLM이 JSON 객체로 반환했을 경우 처리
+        // LLM이 JSON 객체로 반환했을 경우 처리
         if (typeof text === 'object') {
-            // content나 result 필드가 있는지 확인해보고, 없으면 stringify
             rawString = text.content || text.result || JSON.stringify(text);
         } else {
             rawString = String(text);
@@ -115,37 +114,40 @@ export class StoryOrchestrator {
         const lines = rawString.split("\n").filter(line => line.trim() !== "");
         
         return lines.map(line => {
-            // CSV 파싱 (쉼표 기준)
-            const parts = line.split(",").map(p => p.trim());
+            // [중요] 구분자를 파이프(|)로 변경하여 쉼표 대사 문제 해결
+            const parts = line.split("|").map(p => p.trim());
             
-            // 데이터가 충분하지 않으면 스킵 (헤더나 빈 줄 등)
+            // 데이터가 충분하지 않으면 스킵 (빈 줄 방지)
+            // 프롬프트에서 항상 7개 컬럼을 요구했으므로 최소 5개 이상 확인
             if (parts.length < 5) return null;
 
-            // 포맷: {{sceneId}}, id, [Speaker], [Emotion], [Content]
-            const [sceneId, id, speaker, emotion, ...contentParts] = parts;
-            const content = contentParts.join(",").trim(); // 내용에 쉼표가 섞여있을 수 있으므로 합침
+            // 포맷: {{sceneId}} | id | speaker | emotion | text | choice_grade | reply_text
+            // 배열 구조 분해 할당
+            const [sceneId, id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
 
-            // Key 생성: SceneId_001 형태 (패딩 추가하여 정렬 용이하게)
-            // id가 숫자가 아니라면 그대로 사용
+            // Key 생성: SceneId_001 형태
+            // id가 숫자인지 확인 후 패딩 처리
             const safeId = isNaN(Number(id)) ? id : String(id).padStart(3, '0');
             const uniqueKey = `${sceneId}_${safeId}`;
             
-            // 3. 반환 데이터 구성 (Sheet 컬럼과 일치시키는 것이 중요)
-            // types.ts의 StoryResult에 확장 필드가 필요하거나, any로 처리
+            // 3. 반환 데이터 구성 
+            // 시트 헤더 이름과 정확히 일치하는 키값으로 객체를 만들어야 updateSheetData에서 자동 매핑됨
             return {
-                key: uniqueKey,
-                result: content,    // 최종 대사
+                // 시스템 식별용
+                key: uniqueKey,      
                 
-                // [중요] Full Script 모드에서는 아래 필드들이 시트에 같이 업데이트되어야 함
-                // replaceSceneResultsInMemory 함수에서 ...item으로 풀어서 쓸 수 있도록 추가
+                // 시트 컬럼 매핑용
                 sceneId: sceneId,
                 speaker: speaker,
                 emotion: emotion,
-                direction: content, // 보통 result와 direction을 같이 씀 (또는 구분)
+                text: textContent,              // 시트 헤더: text
+                choice_grade: choiceGrade || "", // 시트 헤더: choice_grade (없으면 빈값)
+                reply_text: replyText || "",     // 시트 헤더: reply_text (없으면 빈값)
                 
-                // 기타 필요한 메타데이터
-                model: "AI_Generated", 
-            } as any; // StoryResult 인터페이스가 엄격하다면 as any 혹은 인터페이스 확장 필요
+                // 기존 로직 호환용 (혹시 result 컬럼을 쓰는 곳이 있다면)
+                result: textContent, 
+                
+            } as any; 
 
         }).filter((item): item is StoryResult => item !== null);
     }

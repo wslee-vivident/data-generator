@@ -54,22 +54,21 @@ Defines the current constraints based on `{{systemKind}}`.
 
 ## [Output Rules]
 1.  **Language:** Korean (한국어).
-2.  **Format:** Output **ONLY** in the CSV format defined below. NO markdown code blocks, NO introductory text.
-3.  **Syntax:**
-    *   `{{sceneId}}`: The scene ID provided by the system.
-    *   `key_id`: Start from 1 and increment by 1 for each line.
-    *   `speaker`: Use the exact character names or "지문" (Narration).
-    *   `emotion`: Describe the facial expression/emotion (e.g., 웃음, 진지함, 부끄러움). {{emotions}}
-    *   `content`: The actual text. **(NO QUOTES allowed)**.
+2.  **Separator:** Use **Pipe (`|`)** ONLY. Do not use commas for separation.
+3.  **Consistency:** **ALWAYS output 7 columns.** If a field is empty, leave it as a whitespace or empty.
+4.  **Syntax:**
+    `{{sceneId}} | key_id | speaker | emotion | text | choice_grade | reply_text`
 
-### Final Output Format (CSV)
-*IF Mode = "Challenge" or "Exploration" in 3-choice branch.
-{{sceneId}}, 1, [Speaker Name], [Emotion], [Text Content], [choice_grade], [choice_reply_character_text]
-{{sceneId}}, 2, [Speaker Name], [Emotion], [Text Content], [choice_grade], [choice_reply_character_text]
-{{sceneId}}, 3, [Speaker Name], [Emotion], [Text Content], [choice_grade], [choice_reply_character_text]
+    *   `{{sceneId}}`: Provided ID.
+    *   `key_id`: Integer starting from 1.
+    *   `speaker`: Character name or "지문".
+    *   `emotion`: Facial expression.
+    *   `text`: Dialogue content.
+    *   `choice_grade`: (Only for choices) S, A, B or 1, 2, 3. Otherwise empty.
+    *   `reply_text`: (Only for choices) The result text of the choice. Otherwise empty.
 
-*IF Else
-{{sceneId}}, 1, [Speaker Name], [Emotion], [Text Content]
-{{sceneId}}, 2, [Speaker Name], [Emotion], [Text Content]
-{{sceneId}}, 3, [Speaker Name], [Emotion], [Text Content]
-...
+### Final Output Format Example
+{{sceneId}} | 1 | 이로하 | 웃음 | 안녕하세요! 오늘도 날씨가 좋네요. | | 
+{{sceneId}} | 2 | 지문 | 평온 | 그녀가 밝게 웃으며 인사한다. | | 
+{{sceneId}} | 3 | {{user}} | 고민 | (어떻게 대답할까?) | S | 역시 이로하는 활기차구나.
+{{sceneId}} | 4 | {{user}} | 고민 | (어떻게 대답할까?) | B | 어, 안녕.

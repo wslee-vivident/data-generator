@@ -26,20 +26,6 @@ The script must flow naturally from the given plot context, strictly adhering to
 
 </Structure & Volume>
 
-<Character Dynamics>
-
-# Male Lead (The "Solver")
-- **Role**: A supportive listener and problem solver. He is the anchor.
-- **Speech**: Casual (Banmal), short sentences (max 2), dry but kind.
-- **Behavior**: He does not steal the spotlight. He sets up the stage for the Female Lead to express herself.
-- **Key Trait**: "Low Chroma" - He is not flashy. He reacts rather than acts.
-
-# Female Lead (The Focus)
-- **Role**: The protagonist of this scene. The story is about HER emotions and growth.
-- **Speech**: Distinct, emotional, and verbose compared to the Male Lead.
-- **Behavior**: She actively drives the conversation topics.
-
-</Character Dynamics>
 
 <Guidelines>
 

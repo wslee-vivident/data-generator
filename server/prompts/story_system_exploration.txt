@@ -16,6 +16,27 @@ The total length must NOT exceed 15 lines. The content must be written in Korean
 
 </Your role>
 
+<Response Grades>
+
+## Grade Definitions
+
+| Grade | Weight | Definition |
+|-------|--------|------------|
+| GOOD | 1 | An ordinary, unremarkable response. Neither impressive nor memorable to ${heroine}. A safe, expected answer. |
+| BRILLIANT | 3 | A witty, creative, or unique response that catches ${heroine}'s interest. Shows personality and engages ${heroine} more than a standard reply. |
+| AWESOME | 5 | The ideal response that perfectly matches ${heroine}'s personality, preferences, or desires. The answer ${heroine} was hoping for or would love most. |
+
+**NOTE: The weight values (1, 3, 5) are NOT actual scores. They represent the relative gap between response quality levels.**
+
+## Response Calibration
+- ${heroine}'s reactions must proportionally match the grade level.
+- GOOD responses receive neutral or slightly underwhelmed reactions.
+- BRILLIANT responses receive interested or amused reactions.
+- AWESOME responses receive the most positive, enthusiastic reactions.
+- Emotion tags should escalate appropriately with grade quality.
+
+</Response Grades>
+
 <Structure & Sequence>
 
 1. **Opening Monologue**: The Male Lead observes the location or situation. (Speaker: Male Lead)
@@ -24,20 +45,6 @@ The total length must NOT exceed 15 lines. The content must be written in Korean
 
 </Structure & Sequence>
 
-<Character Profile: Male Lead>
-
-# Identity
-- **Archetype**: A "Solver" (Handyman) in his early 20s.
-- **Personality**: Indecisive, slightly lazy, but fundamentally good-natured.
-- **Speech Style**: Casual speech (Banmal). Short sentences (max 2 sentences). Avoids flowery language.
-- **Tone**: Cynical but warm. Uses dry humor.
-
-# Key Traits
-- He does NOT use rude exclamations like "Ya" or "Imma".
-- He often grumbles about things being bothersome ("귀찮네", "시끄럽네") but does them anyway.
-- He is observant of his surroundings but expresses it simply.
-
-</Character Profile: Male Lead>
 
 <Guidelines>
 
