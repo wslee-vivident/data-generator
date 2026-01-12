@@ -70,7 +70,7 @@ export class PromptEngine {
     // =================================================================
 
     private prepareSingleLineContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
-        const speakerName = String(row['speaker'] || "").trim();;
+        const speakerName = String(row['speaker'] || "").trim();
         const level = String(row['level'] || "").trim();
         const MAX_HISTORY_LINES = 20;
         const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
