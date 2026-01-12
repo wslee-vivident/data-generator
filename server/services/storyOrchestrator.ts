@@ -60,7 +60,8 @@ export class StoryOrchestrator {
                 if (this.mode === 'full_script') {
                     // [Full Script 모드]
                     // LLM이 여러 줄의 CSV를 뱉음 -> 파싱해서 여러 개의 Result로 변환
-                    const parsedLines = this.parseFullScriptCSV(rawOutput);
+                    const sceneId = row['sceneId'] || "unknown_scene";
+                    const parsedLines = this.parseFullScriptCSV(rawOutput, sceneId);
                     results.push(...parsedLines);
                     
                     // 히스토리에 전체 대화 내용을 요약해서 넣거나, 마지막 대사를 넣음
@@ -92,11 +93,15 @@ export class StoryOrchestrator {
         const safeText = typeof text === 'string' ? text : String(text);
 
         const parts = safeText.split(",");
-        return parts.length >= 2 ? parts.slice(1).join(",").trim() : safeText.replace(key, "").trim();
+        if (parts.length >= 2) {
+            // 첫 번째 쉼표 이후의 모든 텍스트를 합침 (대사에 쉼표 포함 가능성)
+            return parts.slice(1).join(",").trim();
+        }
+        return text.replace(key, "").trim();
     }
 
     // 신규 방식 파서 (Full Script) - 안전 장치 및 컬럼 매핑 강화
-    private parseFullScriptCSV(text: any): StoryResult[] {
+    private parseFullScriptCSV(text: any, inputSceneId:string): StoryResult[] {
         // 1. 입력값 안전 검증
         if (!text) {
             console.warn("⚠️ parseFullScriptCSV received empty input.");
@@ -130,24 +135,21 @@ export class StoryOrchestrator {
             // Key 생성: SceneId_001 형태
             // id가 숫자인지 확인 후 패딩 처리
             const safeId = isNaN(Number(id)) ? id : String(id).padStart(3, '0');
-            const uniqueKey = `${sceneId}_${safeId}`;
+            const uniqueKey = `${inputSceneId}_${safeId}`;
             
             // 3. 반환 데이터 구성 
             // 시트 헤더 이름과 정확히 일치하는 키값으로 객체를 만들어야 updateSheetData에서 자동 매핑됨
             return {
                 // 시스템 식별용
-                key: uniqueKey,      
-                
+                sceneId: inputSceneId,
+                      
                 // 시트 컬럼 매핑용
-                sceneId: sceneId,
+                key: uniqueKey,
                 speaker: speaker,
                 emotion: emotion,
                 text: textContent,              // 시트 헤더: text
                 choice_grade: choiceGrade || "", // 시트 헤더: choice_grade (없으면 빈값)
-                reply_text: replyText || "",     // 시트 헤더: reply_text (없으면 빈값)
-                
-                // 기존 로직 호환용 (혹시 result 컬럼을 쓰는 곳이 있다면)
-                result: textContent, 
+                reply_text: replyText || ""     // 시트 헤더: reply_text (없으면 빈값)
                 
             } as any; 
 

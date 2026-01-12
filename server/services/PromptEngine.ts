@@ -70,8 +70,8 @@ export class PromptEngine {
     // =================================================================
 
     private prepareSingleLineContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
-        const speakerName = row['speaker'] || "";
-        const level = String(row['level'] || "");
+        const speakerName = String(row['speaker'] || "").trim();;
+        const level = String(row['level'] || "").trim();
         const MAX_HISTORY_LINES = 20;
         const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
 
@@ -88,7 +88,7 @@ export class PromptEngine {
     }
 
     private prepareFullStoryContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
-        const charName = row['character'] || "";
+        const charName = String(row['character'] || "").trim();
         const level = String(row['level'] || "");
 
         let heroineProfile = "";
@@ -97,7 +97,7 @@ export class PromptEngine {
         }
 
         const playerProfile = loadPrompt(`story_character_player.txt`);
-        const systemKind = row['systemKind'] || "";
+        const systemKind = String(row['systemKind'] || "").trim();
         let systemPrompt = "";
         if(systemKind) {
             systemPrompt = loadPrompt(`story_system_${systemKind}.txt`);
@@ -119,16 +119,13 @@ export class PromptEngine {
         if(!speaker) return "";
 
         let fileName = "";
-        const cleanSpeaker = String(speaker).trim();
 
-        if(String(level).trim() !== "" && level !== null && level !== undefined) {
-            fileName = `story_character_${cleanSpeaker}_${level}.txt`;
-        } else if (String(cleanSpeaker) === "player") {
-            fileName = `story_character_player.txt`;
-        } else if (String(cleanSpeaker) === "narration") {
-            fileName = `story_character_narration.txt`;
+        if(level !== "" && level !== null && level !== undefined) {
+            fileName = `story_character_${speaker}_${level}.txt`;
+        } else if (level === "" || level === null || level === undefined) {
+            fileName = `story_character_${speaker}.txt`;
         } else  {
-            fileName = `Name: ${cleanSpeaker}`;
+            fileName = `Name: ${speaker}`;
         }
 
         // 파일 로드 시도
