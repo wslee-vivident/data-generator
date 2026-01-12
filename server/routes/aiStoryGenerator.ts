@@ -4,6 +4,7 @@ import { StoryOrchestrator } from '../services/storyOrchestrator';
 import { getSheetData, updateSheetData } from '../services/googleSheet';
 import { BaseStoryRow, StoryResult } from '../types';
 
+type GenerationMode = 'single_line' | 'full_script';
 const router = express.Router();
 
 // ==========================================
@@ -43,7 +44,7 @@ async function handleStoryGeneration(req: express.Request, res: express.Response
         if (!mainTemplate) throw new Error(`Prompt file not found: ${promptFile}`);
 
         // 3. Scene핑
-        const groupedRows = groupRowsBySceneId(storyRows);
+        const groupedRows = groupRowsBySceneId(storyRows, mode);
         
         // 4. 병렬 처리 실행
         const tasks = Object.entries(groupedRows).map(async ([sceneId, rows]) => {
@@ -88,12 +89,24 @@ async function handleStoryGeneration(req: express.Request, res: express.Response
 // 3. 헬퍼 함수들
 // ==========================================
 
-function groupRowsBySceneId(rows: BaseStoryRow[]): Record<string, BaseStoryRow[]> {
+function groupRowsBySceneId(rows: BaseStoryRow[], mode:GenerationMode): Record<string, BaseStoryRow[]> {
     const groups: Record<string, BaseStoryRow[]> = {};
     for (const row of rows) {
-        const sceneId = row.sceneId ? String(row.sceneId).trim() : "unknown";
-        if (!groups[sceneId]) groups[sceneId] = [];
-        groups[sceneId].push(row);
+        if(mode === 'full_script' && row['character'].trim() !== "") {
+            const characterId = row['character'].trim();
+            if (!groups[characterId]) {
+                groups[characterId] = [];
+            } else  {
+                groups[characterId].push(row);
+            }
+        } else if (mode === 'single_line' && row.sceneId.trim() !== "") {
+            const sceneId = row.sceneId.trim();
+            if (!groups[sceneId]) {
+                groups[sceneId] = [];
+            } else {
+                groups[sceneId].push(row);
+            }           
+        }
     }
     return groups;
 }
