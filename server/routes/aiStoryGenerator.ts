@@ -95,20 +95,22 @@ async function handleStoryGeneration(req: express.Request, res: express.Response
 function groupRowsBySceneId(rows: BaseStoryRow[], mode:GenerationMode): Record<string, BaseStoryRow[]> {
     const groups: Record<string, BaseStoryRow[]> = {};
     for (const row of rows) {
-        if(mode === 'full_script' && row['character'].trim() !== "") {
-            const characterId = row['character'].trim();
-            if (!groups[characterId]) {
-                groups[characterId] = [];
-            } else  {
-                groups[characterId].push(row);
+        let groupKey = "";
+        if(mode === 'full_script') {
+           const char = String(row['character'] || "").trim();
+           if(char) groupKey = char;
+        } else {
+            const sceneId = String(row['sceneId'] || "").trim();
+            if(sceneId) groupKey = sceneId;
+        }
+
+        //2. 그룹핑
+        if(groupKey) {
+            if(!groups[groupKey]) {
+                groups[groupKey] = [];
             }
-        } else if (mode === 'single_line' && row.sceneId.trim() !== "") {
-            const sceneId = row.sceneId.trim();
-            if (!groups[sceneId]) {
-                groups[sceneId] = [];
-            } else {
-                groups[sceneId].push(row);
-            }           
+
+            groups[groupKey].push(row);
         }
     }
     return groups;
