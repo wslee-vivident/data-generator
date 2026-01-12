@@ -1,5 +1,6 @@
 import { BaseStoryRow } from '../types';
 import { loadPrompt } from '../../shared/helpUtil';
+import { file } from 'googleapis/build/src/apis/file';
 
 export type GenerationMode = 'single_line' | 'full_script';
 
@@ -119,17 +120,29 @@ export class PromptEngine {
         if(!speaker) return "";
 
         let fileName = "";
+        const cleanSpeaker = speaker.trim();
 
-        if(level !== "" && level !== null && level !== undefined) {
-            fileName = `story_character_${speaker}_${level}.txt`;
-        } else if (level === "" || level === null || level === undefined) {
-            fileName = `story_character_${speaker}.txt`;
-        } else  {
-            fileName = `Name: ${speaker}`;
+        if(cleanSpeaker === "player" || cleanSpeaker === "주인공" || cleanSpeaker === "{{user}}") {
+            fileName = `story_character_player.txt`;
+        } else if(cleanSpeaker === "narration" || cleanSpeaker === "나레이션" || cleanSpeaker === "지문") {
+            fileName = `story_character_narration.txt`;
+        }
+        else {
+            if(level !== undefined && level !== null && level !== "") {
+                fileName = `story_character_${cleanSpeaker}_${level}.txt`;
+            } else {
+                fileName = `story_character_${cleanSpeaker}.txt`;
+            }
         }
 
-        // 파일 로드 시도
-        return loadPrompt(fileName);
+        const content = loadPrompt(fileName);
+
+        if(!content) {
+            console.warn(`⚠️ Speaker profile not found for: ${cleanSpeaker} (Level: ${level || "N/A"})`);
+            return `[Role Defination]\nName: ${cleanSpeaker}\nDescription: No specific profile found. Please portray ${cleanSpeaker} appropriately based on the context.`;
+        }
+
+        return content;
     }
 }
 
