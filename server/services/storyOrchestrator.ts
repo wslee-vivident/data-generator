@@ -41,17 +41,17 @@ export class StoryOrchestrator {
                 // 2. 모델 호출
                 // row.model이 있으면 사용, 없으면 기본값
                 const modelName = row.model?.toLowerCase() || "gemini";
-                let rawOutput : any = "";
+                let rawOutput = "";
 
                 switch(modelName) {
                     case "gpt":
-                        rawOutput = sendToOpenAI(inputText, prompt, temperature);
+                        rawOutput = await sendToOpenAI(inputText, prompt, temperature);
                         break;
                     case "claude":
-                        rawOutput = sendToClaude(inputText, prompt, temperature);
+                        rawOutput = await sendToClaude(inputText, prompt, temperature);
                         break;
                     case "gemini":
-                        rawOutput = sendToGemini(inputText, prompt, temperature);
+                        rawOutput = await sendToGemini(inputText, prompt, temperature);
                         break;
                     default:
                         throw new Error(`Unsupported model: ${modelName}`);
@@ -83,37 +83,70 @@ export class StoryOrchestrator {
     }
 
     // 기존 방식 파서
-    private parseSingleLine(text: string, key: string): string {
-        const parts = text.split(",");
-        return parts.length >= 2 ? parts.slice(1).join(",").trim() : text.replace(key, "").trim();
+    private parseSingleLine(text: any, key: string): string {
+        // 1. 입력값 검증: 문자열이 아니면 강제로 변환하거나 빈 문자열 처리
+        if (!text) return "";
+        
+        const safeText = typeof text === 'string' ? text : String(text);
+
+        const parts = safeText.split(",");
+        return parts.length >= 2 ? parts.slice(1).join(",").trim() : safeText.replace(key, "").trim();
     }
 
-    // 신규 방식 파서 (Full Script)
-    private parseFullScriptCSV(text: string): StoryResult[] {
-        // 예상 포맷: {{sceneId}}, 1, [Speaker], [Emotion], [Content]
-        // 줄바꿈으로 분리
-        const lines = text.split("\n").filter(line => line.trim() !== "");
+    // 신규 방식 파서 (Full Script) - 안전 장치 및 컬럼 매핑 강화
+    private parseFullScriptCSV(text: any): StoryResult[] {
+        // 1. 입력값 안전 검증 (split 에러 방지)
+        if (!text) {
+            console.warn("⚠️ parseFullScriptCSV received empty input.");
+            return [];
+        }
+
+        let rawString = "";
+        
+        // 만약 LLM이 JSON 객체로 반환했을 경우 처리
+        if (typeof text === 'object') {
+            // content나 result 필드가 있는지 확인해보고, 없으면 stringify
+            rawString = text.content || text.result || JSON.stringify(text);
+        } else {
+            rawString = String(text);
+        }
+
+        // 2. 줄바꿈으로 분리
+        const lines = rawString.split("\n").filter(line => line.trim() !== "");
         
         return lines.map(line => {
-            // CSV 파싱 (쉼표 기준, 따옴표 처리 등은 간소화)
+            // CSV 파싱 (쉼표 기준)
             const parts = line.split(",").map(p => p.trim());
+            
+            // 데이터가 충분하지 않으면 스킵 (헤더나 빈 줄 등)
             if (parts.length < 5) return null;
 
-            // sceneId, id, speaker, emotion, content
+            // 포맷: {{sceneId}}, id, [Speaker], [Emotion], [Content]
             const [sceneId, id, speaker, emotion, ...contentParts] = parts;
-            const content = contentParts.join(",").trim(); // 내용에 쉼표가 있을 경우 합침
+            const content = contentParts.join(",").trim(); // 내용에 쉼표가 섞여있을 수 있으므로 합침
 
-            // Key 생성 전략: SceneId_ID (예: 이로하_스토리_1_1)
-            const uniqueKey = `${sceneId}_${String(id).padStart(3, '0')}`;
+            // Key 생성: SceneId_001 형태 (패딩 추가하여 정렬 용이하게)
+            // id가 숫자가 아니라면 그대로 사용
+            const safeId = isNaN(Number(id)) ? id : String(id).padStart(3, '0');
+            const uniqueKey = `${sceneId}_${safeId}`;
             
-            // 결과 포맷 (원하는 시트 컬럼 구조에 맞춰 JSON 문자열이나 값으로 변환)
-            // 여기서는 시트에 'result' 컬럼 하나에 넣기보다는, 
-            // 나중에 시트에 row를 추가(Append)할 때 쓸 수 있는 객체 형태로 반환하는 게 좋음.
-            // 하지만 기존 인터페이스 유지를 위해 result에 CSV raw data를 넣거나 JSON을 넣음.
+            // 3. 반환 데이터 구성 (Sheet 컬럼과 일치시키는 것이 중요)
+            // types.ts의 StoryResult에 확장 필드가 필요하거나, any로 처리
             return {
                 key: uniqueKey,
-                result: content // 혹은 JSON.stringify({ speaker, emotion, content })
-            };
+                result: content,    // 최종 대사
+                
+                // [중요] Full Script 모드에서는 아래 필드들이 시트에 같이 업데이트되어야 함
+                // replaceSceneResultsInMemory 함수에서 ...item으로 풀어서 쓸 수 있도록 추가
+                sceneId: sceneId,
+                speaker: speaker,
+                emotion: emotion,
+                direction: content, // 보통 result와 direction을 같이 씀 (또는 구분)
+                
+                // 기타 필요한 메타데이터
+                model: "AI_Generated", 
+            } as any; // StoryResult 인터페이스가 엄격하다면 as any 혹은 인터페이스 확장 필요
+
         }).filter((item): item is StoryResult => item !== null);
     }
 }

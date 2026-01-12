@@ -17,8 +17,6 @@ export interface StoryRowData extends BaseStoryRow {
     narrationTone: string;
     writingStyle: string;
     introContext: string;
-    model: string;
-    temperature : number;
 }
 
 export interface FullStoryRowData extends BaseStoryRow {
