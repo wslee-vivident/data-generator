@@ -26,7 +26,7 @@ export interface FullStoryRowData extends BaseStoryRow {
     direction : string;
     place : string;
     location : string;
-    emotions : any;
+    emotions : string[];
 }
 
 export interface StoryResult {

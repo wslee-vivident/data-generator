@@ -7,7 +7,9 @@ export class PromptEngine {
     private mainTemplate : string;
     private dictionary : string;
 
-    constructor (mainTemplateContent : string, dictionaryObj : Record<string, string>) {
+    constructor (mainTemplateContent : string, 
+        dictionaryObj : Record<string, string>
+    ) {
         this.mainTemplate = mainTemplateContent;
         // 딕셔너리를 미리 줄바꿈 문자열로 변환
         this.dictionary = Object.entries(dictionaryObj)
@@ -21,11 +23,12 @@ export class PromptEngine {
 
         const commonReplacements : Record<string, string> = {
             "{{oshiz_dictionary}}" : this.dictionary,
-            "{{scene_id}}" : row.sceneId || "",
+            "{{scene_id}}" : row['sceneId'] || "",
             "{{key}}" : row['key'] || "",
             "{{Location}}" : row['location'] || "",
             "{{direction}}" : row['direction'] || "",
-
+            "{{model}}" : row['model'] || "",
+            "{{temperature}}" : row['temperature'] !== undefined ? String(row['temperature']) : "",
         };
 
         let specificReplacements : Record<string, string> = {};
@@ -108,7 +111,6 @@ export class PromptEngine {
             "{{character_info}}" : heroineProfile,
             "{{place}}" : row['place'] || "",
             "{{systemKind}}" : systemPrompt,
-            "{{emotions}}" : row['emotions'] || "",
             "{{script_history}}" : recentHistory || "(대화 시작)",
         }
     }
@@ -119,22 +121,14 @@ export class PromptEngine {
         let fileName = "";
         const cleanSpeaker = String(speaker).trim();
 
-        // 1. 플레이어
-        if (cleanSpeaker === "player" || cleanSpeaker === "주인공") {
+        if(String(level).trim() !== "" && level !== null && level !== undefined) {
+            fileName = `story_character_${cleanSpeaker}_${level}.txt`;
+        } else if (String(cleanSpeaker) === "player") {
             fileName = `story_character_player.txt`;
-        } 
-        // 2. 나레이션
-        else if (cleanSpeaker === "narration" || cleanSpeaker === "지문") {
+        } else if (String(cleanSpeaker) === "narration") {
             fileName = `story_character_narration.txt`;
-        } 
-        // 3. 일반 캐릭터 (레벨 체크)
-        else {
-            if (level !== undefined && level !== null && String(level).trim() !== "") {
-                fileName = `story_character_${cleanSpeaker}_${level}.txt`;
-            } else {
-                // 여기서는 파일이 있다고 가정하거나, fallback으로 이름만 리턴
-                fileName = `story_character_${cleanSpeaker}_1.txt`; // 필요하면 활성화 
-            }
+        } else  {
+            fileName = `Name: ${cleanSpeaker}`;
         }
 
         // 파일 로드 시도

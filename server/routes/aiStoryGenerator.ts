@@ -42,6 +42,9 @@ async function handleStoryGeneration(req: express.Request, res: express.Response
         // 2. 프롬프트 로드
         const mainTemplate = loadPrompt(promptFile);
         if (!mainTemplate) throw new Error(`Prompt file not found: ${promptFile}`);
+        if(emotions.length > 0) {
+            mainTemplate.replace("{{emotions}}", emotions ? emotions.join(", ") : "");
+        }
 
         // 3. Scene핑
         const groupedRows = groupRowsBySceneId(storyRows, mode);
