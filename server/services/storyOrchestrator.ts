@@ -32,9 +32,13 @@ export class StoryOrchestrator {
                 // 1. 프롬프트 생성
                 const prompt = this.promptEngine.buildPrompt(row, this.history, this.mode);
                 const temperature = row.temperature !== undefined ? row.temperature : 0.5;
-                let inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
-                ${this.history.join("\n")}\n
-                Now, generate the next part of the story based on the prompt.`;
+                let inputText = "";
+                if(this.mode === 'single_line') {
+                    inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`
+                } else if (this.mode === 'full_script') {
+                    inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
+                    ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
+                }
                 
                 // 2. 모델 호출
                 // row.model이 있으면 사용, 없으면 기본값
