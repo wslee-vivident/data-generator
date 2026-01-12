@@ -1,142 +1,171 @@
 import express from 'express';
-import path from "path";
 import { parseSheetToObject, loadPrompt } from '../../shared/helpUtil';
-import { StoryOrchestrator  } from '../services/storyOrchestrator';
-import { getSheetData, updateSheetData  } from '../services/googleSheet';
-import { StoryRowData, StoryResult } from '../types';
-
-
+import { StoryOrchestrator } from '../services/storyOrchestrator';
+import { getSheetData, updateSheetData } from '../services/googleSheet';
+import { BaseStoryRow, StoryResult } from '../types';
 
 const router = express.Router();
 
-
+// ==========================================
+// 1. 라우터 정의
+// ==========================================
 router.post("/story-generate", async (req, res) => {
-    console.log("📥 [POST] /story-generate");
-    try {
-        const { data, dictionary, sheetName, sheetId, promptFile } = req.body;
-
-        // 1. 입력값 검증
-        if (!data || !Array.isArray(data) || data.length < 2) {
-            return res.status(400).json({ error: "Invalid data format (Header required)" });
-        }
-        if (!promptFile) {
-            return res.status(400).json({ error: "promptFile is required" });
-        }
-
-        // 2. 데이터 파싱
-        const storyRows: StoryRowData[] = parseSheetToObject(data);
-        console.log(`Parsed ${storyRows.length} rows.`);
-
-        // 3. 메인 프롬프트 템플릿 로드
-        const mainTemplate = loadPrompt(promptFile);
-        if (!mainTemplate) {
-            throw new Error(`Main prompt file not found: ${promptFile}`);
-        }
-
-        //SceneId 별로 데이터 그룹화
-        const groupedRows = groupRowsBySceneId(storyRows);
-        const sceneIds = Object.keys(groupedRows);
-
-        console.log(`📌 Identified ${sceneIds.length} scenes: [${sceneIds.join(", ")}]`);
-
-        //각 씬(Scene)별 병렬 처리 (Parallel Execution)
-        const tasks = Object.entries(groupedRows).map(async ([sceneIds, rows]) => {
-            console.log(`🚀 Generating stories for Scene ID: ${sceneIds} with ${rows.length} rows.`)
-            
-            const orchestrator = new StoryOrchestrator(rows, mainTemplate, dictionary);
-            const results = await orchestrator.generateAll();
-
-            console.log(`✅ Completed Scene ID: ${sceneIds}, generated ${results.length} lines story.`);
-            return results;
-        });
-
-         // 모든 씬의 작업이 끝날 때까지 대기
-        const resultsArrays = await Promise.all(tasks);
-        
-        // 결과 평탄화 (Array of Arrays -> Single Array)
-        const finalResults: StoryResult[] = resultsArrays.flat();
-
-        // 5. 시트 업데이트
-        // 기존 코드의 mergeTranslationsInMemory + updateSheetData 로직을 활용
-        if (finalResults.length > 0) {
-            console.log("💾 Applying generated stories to sheet...");
-
-            // Part.1: 현재 시트의 모든 데이터를 가져옴 (기존 데이터 보존)
-            const currentSheetRows = await getSheetData(sheetId, sheetName);
-
-            // Part.2: 메모리 상에서 기존 데이터에 생성된 결과(result)만 병합
-            const mergedRows = mergeStoryResultsInMemory(currentSheetRows, finalResults);
-
-            // Part.3: 병합된 전체 데이터를 시트에 한 번에 업데이트 (2번째 행부터 시작)
-            await updateSheetData(sheetId, sheetName, 2, mergedRows);
-            
-            console.log("✅ Sheet updated safely.");
-        } else {
-            console.log("⚠️ No results generated, skipping sheet update.");
-        }
-
-        // 6. 결과 응답
-        return res.status(200).json({
-            status: "OK",
-            count: finalResults.length,
-            results: finalResults
-        });
-
-    } catch (err: any) {
-        console.error("🔥 Critical Error:", err);
-        res.status(500).json({ error: err.message || "Internal Server Error" });
-    }
+    return handleStoryGeneration(req, res, 'single_line');
 });
 
-/**
- * 데이터를 sceneId 기준으로 그룹화하는 헬퍼 함수
- */
-function groupRowsBySceneId(rows : StoryRowData[]) : Record<string, StoryRowData[]> {
-    const groups : Record<string, StoryRowData[]> = {};
+router.post("/full-story-generate", async (req, res) => {
+    return handleStoryGeneration(req, res, 'full_script');
+});
 
-    for(const row of rows) {
-        // SceneId가 비어있으면 "unknown" 그룹으로
-        const sceneId = row.sceneId ? row.sceneId.trim() : "unknown";
+// ==========================================
+// 2. 공통 핸들러 (로직 통합)
+// ==========================================
+async function handleStoryGeneration(req: express.Request, res: express.Response, mode: 'single_line' | 'full_script') {
+    console.log(`📥 [POST] Story Generation - Mode: ${mode}`);
+    
+    try {
+        // req.body 파싱 (var 대신 let 사용, 공통 변수 추출)
+        const { data, dictionary, sheetName, sheetId, promptFile } = req.body;
+        
+        // 추가 파라미터 (Full Script용)
+        const { emotions } = req.body; // 필요하다면 사용
 
-        if(!groups[sceneId]) {
-            groups[sceneId] = [];
+        if (!data || !Array.isArray(data) || data.length < 2) {
+            return res.status(400).json({ error: "Invalid data format" });
         }
+        if (!promptFile) return res.status(400).json({ error: "promptFile required" });
+
+        // 1. 데이터 파싱
+        const storyRows: BaseStoryRow[] = parseSheetToObject(data);
+        
+        // 2. 프롬프트 로드
+        const mainTemplate = loadPrompt(promptFile);
+        if (!mainTemplate) throw new Error(`Prompt file not found: ${promptFile}`);
+
+        // 3. Scene핑
+        const groupedRows = groupRowsBySceneId(storyRows);
+        
+        // 4. 병렬 처리 실행
+        const tasks = Object.entries(groupedRows).map(async ([sceneId, rows]) => {
+            console.log(`🚀 Scene: ${sceneId} (${rows.length} rows)`);
+            const orchestrator = new StoryOrchestrator(rows, mainTemplate, dictionary, mode);
+            return await orchestrator.generateAll();
+        });
+
+        const resultsArrays = await Promise.all(tasks);
+        const finalResults: StoryResult[] = resultsArrays.flat();
+
+        // 5. 시트 업데이트 (모드별 전략 분기)
+        if (finalResults.length > 0) {
+            console.log("💾 Fetching current sheet data...");
+            const currentSheetRows = await getSheetData(sheetId, sheetName);
+            let mergedRows: any[] = [];
+
+            if (mode === 'single_line') {
+                // [기존 방식] Key가 일치하는 행만 찾아서 'result' 컬럼 업데이트
+                console.log("Mode: Single Line (Update matching keys)");
+                mergedRows = mergeStoryResultsInMemory(currentSheetRows, finalResults);
+            } else {
+                // [신규 방식] SceneId 기준 기존 행 삭제 -> 신규 행 추가
+                console.log("Mode: Full Script (Replace scenes & Append new)");
+                mergedRows = replaceSceneResultsInMemory(currentSheetRows, finalResults);
+            }
+
+            console.log(`💾 Updating sheet with ${mergedRows.length} rows...`);
+            await updateSheetData(sheetId, sheetName, 2, mergedRows);
+            console.log("✅ Sheet updated safely.");
+        }
+
+        return res.status(200).json({ status: "OK", count: finalResults.length, results: finalResults });
+
+    } catch (err: any) {
+        console.error("🔥 Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+}
+
+// ==========================================
+// 3. 헬퍼 함수들
+// ==========================================
+
+function groupRowsBySceneId(rows: BaseStoryRow[]): Record<string, BaseStoryRow[]> {
+    const groups: Record<string, BaseStoryRow[]> = {};
+    for (const row of rows) {
+        const sceneId = row.sceneId ? String(row.sceneId).trim() : "unknown";
+        if (!groups[sceneId]) groups[sceneId] = [];
         groups[sceneId].push(row);
     }
     return groups;
 }
 
-function mergeStoryResultsInMemory(
-    originalRows: any[],
-    newResults: StoryResult[]
-): any[] {
-    // 1. 검색 속도를 위해 기존 데이터를 Map으로 변환 (Key 기준)
+/**
+ * [Single Line 모드용]
+ * 기존 시트 데이터에 Key가 일치하는 경우에만 result를 업데이트합니다.
+ */
+function mergeStoryResultsInMemory(originalRows: any[], newResults: StoryResult[]): any[] {
     const rowMap = new Map<string, any>();
+    
+    // 원본 데이터 보존
     originalRows.forEach(row => {
-        // key 컬럼이 존재한다고 가정
-        const k = String(row.key ?? "").trim();
+        const k = String(row.key || "").trim();
         if (k) rowMap.set(k, { ...row });
     });
 
-    // 2. 생성된 결과를 순회하며 Map 업데이트
+    // 결과 병합
     for (const item of newResults) {
-        const normalizedKey = String(item.key).trim();
-        const existing = rowMap.get(normalizedKey);
-
+        const key = String(item.key).trim();
+        const existing = rowMap.get(key);
+        
         if (existing) {
-            // 해당 키가 시트에 존재할 경우에만 'result' 컬럼 업데이트
-            if (item.result && item.result.trim() !== "") {
-                existing['result'] = item.result;
-            }
-            // Map에 다시 저장 (객체 참조라 사실 필요 없지만 명시적으로)
-            rowMap.set(normalizedKey, existing);
-        } else {
-            console.warn(`Skipping update for missing key: ${normalizedKey}`);
+            existing['result'] = item.result;
+            rowMap.set(key, existing);
         }
     }
-
-    // 3. Map을 다시 배열로 변환하여 반환
     return Array.from(rowMap.values());
+}
+
+/**
+ * [Full Script 모드용]
+ * 1. 생성된 결과들에 포함된 SceneId를 파악합니다.
+ * 2. 기존 시트 데이터에서 해당 SceneId를 가진 행들을 모두 제거합니다.
+ * 3. 생성된 결과를 새로운 행으로 변환하여 배열 끝에 추가합니다.
+ */
+function replaceSceneResultsInMemory(originalRows: any[], newResults: StoryResult[]): any[] {
+    // 1. 새로 생성된 Scene ID 목록 추출
+    // Key 형식이 "SceneID_Index" 라고 가정하고 파싱 (또는 StoryResult에 sceneId가 있다면 사용)
+    const newSceneIds = new Set<string>();
+    
+    // newResults를 바로 행 객체로 변환할 준비
+    const newRowObjects: any[] = newResults.map(item => {
+        // Key에서 SceneId 추출 (예: "Chapter1_1" -> "Chapter1")
+        // 만약 item 객체 안에 sceneId가 명시적으로 없다면 key 파싱 의존
+        const keyParts = item.key.split('_');
+        // 마지막 _숫자 부분을 제외한 나머지를 sceneId로 간주 (안전한 파싱 필요)
+        const inferredSceneId = keyParts.length > 1 ? keyParts.slice(0, -1).join('_') : "unknown";
+        
+        newSceneIds.add(inferredSceneId);
+
+        // Orchestrator에서 반환된 item이 이미 row 형태(speaker, emotion 포함)라면 그대로 사용
+        // 만약 item이 {key, result} 뿐이라면 시트 컬럼에 맞춰 확장 필요
+        // 여기서는 item 자체가 시트에 들어갈 객체 형태라고 가정하고 병합
+        return {
+            sceneId: inferredSceneId,
+            ...item // key, result, (speaker, emotion 등이 포함되어 있다고 가정)
+        };
+    });
+
+    console.log(`♻️ Replacing rows for scenes: [${Array.from(newSceneIds).join(', ')}]`);
+
+    // 2. 기존 데이터에서, 이번에 새로 생성된 SceneId에 해당하는 행들을 '제외' (삭제)
+    const preservedRows = originalRows.filter(row => {
+        const currentSceneId = String(row.sceneId || "").trim();
+        // 새로 생성된 씬 목록에 포함되지 않은 행만 남김
+        return !newSceneIds.has(currentSceneId);
+    });
+
+    // 3. 보존된 행 뒤에 새로운 행 추가 (Append)
+    // preservedRows(기존 안 건드린 씬) + newRowObjects(새로 쓴 씬)
+    return [...preservedRows, ...newRowObjects];
 }
 
 export default router;

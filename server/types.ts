@@ -1,4 +1,11 @@
-export interface StoryRowData {
+export interface BaseStoryRow {
+    sceneId : string;
+    model? : string;
+    temperature? : number;
+    [key : string] : any;
+}
+
+export interface StoryRowData extends BaseStoryRow {
     sceneId: string;
     key: string;
     speaker: string;
@@ -12,6 +19,16 @@ export interface StoryRowData {
     introContext: string;
     model: string;
     temperature : number;
+}
+
+export interface FullStoryRowData extends BaseStoryRow {
+    character : string;
+    level: string | number;
+    systemKind : string;
+    direction : string;
+    place : string;
+    location : string;
+    emotions : any;
 }
 
 export interface StoryResult {
