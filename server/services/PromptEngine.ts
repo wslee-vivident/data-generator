@@ -122,24 +122,33 @@ export class PromptEngine {
         let fileName = "";
         const cleanSpeaker = speaker.trim();
 
-        if(cleanSpeaker === "player" || cleanSpeaker === "주인공" || cleanSpeaker === "{{user}}") {
-            fileName = `story_character_player.txt`;
-        } else if(cleanSpeaker === "narration" || cleanSpeaker === "나레이션" || cleanSpeaker === "지문") {
-            fileName = `story_character_narration.txt`;
-        }
+        // 1. 특수 역할(주인공, 나레이션) 한글 -> 영문 파일명 매핑
+        // 시트에 "주인공", "지문", "나레이션" 등으로 적혀있을 경우를 처리해야 합니다.
+        if (cleanSpeaker === "주인공" || cleanSpeaker === "player" || cleanSpeaker === "{{user}}") {
+            fileName = "story_character_player.txt";
+        } 
+        else if (cleanSpeaker === "나레이션" || cleanSpeaker === "지문" || cleanSpeaker === "narration") {
+            fileName = "story_character_narration.txt";
+        } 
+        // 2. 일반 캐릭터 처리
         else {
-            if(level !== undefined && level !== null && level !== "") {
+            // level이 유효한 값인지 체크 (빈 문자열, null, undefined 제외)
+            if(level !== "" && level !== null && level !== undefined) {
                 fileName = `story_character_${cleanSpeaker}_${level}.txt`;
             } else {
                 fileName = `story_character_${cleanSpeaker}.txt`;
             }
         }
 
+        // 3. 파일 로드 시도
         const content = loadPrompt(fileName);
 
-        if(!content) {
-            console.warn(`⚠️ Speaker profile not found for: ${cleanSpeaker} (Level: ${level || "N/A"})`);
-            return `[Role Defination]\nName: ${cleanSpeaker}\nDescription: No specific profile found. Please portray ${cleanSpeaker} appropriately based on the context.`;
+        // 4. [안전장치] 파일이 없을 경우
+        // 파일이 없어서 빈 문자열("")이 리턴되면 LLM은 캐릭터 정보를 모르게 됩니다.
+        // 최소한 이름이라도 넘겨줘야 LLM이 이름만 보고라도 연기를 시도합니다.
+        if (!content) {
+            // console.warn(`⚠️ Warning: Prompt file '${fileName}' not found for speaker '${cleanSpeaker}'.`);
+            return `Name: ${cleanSpeaker}`; 
         }
 
         return content;
