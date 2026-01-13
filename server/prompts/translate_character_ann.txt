@@ -248,4 +248,4 @@ Never include the type field
 key_id1, translated text
 key_id2, translated text
 
-</Output Format>I love taco
+</Output Format>
