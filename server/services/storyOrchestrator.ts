@@ -1,91 +1,162 @@
-import { StoryRowData, StoryResult } from "../types";
+import { BaseStoryRow, StoryResult } from "../types";
 import { PromptEngine } from "./PromptEngine";
 import { sendToOpenAI } from "./openAI";
 import { sendToGemini } from "./googleGemini";
 import { sendToClaude } from "./anthropicAI";
 import { send } from "process";
 
-export class StoryOrchestrator {
-    private rows: StoryRowData[];
-    private promptEngine: PromptEngine;
-    private conversationHistory: string[] = [];
+type GenerationMode = 'single_line' | 'full_script';
 
-    constructor(rows: StoryRowData[], mainTemplate: string, dictionary: any) {
+export class StoryOrchestrator {
+    private rows: BaseStoryRow[];
+    private promptEngine: PromptEngine;
+    private history: string[] = [];
+    private mode: GenerationMode;
+
+    constructor(
+        rows: BaseStoryRow[], 
+        mainTemplate: string, 
+        dictionary: any,
+        mode: GenerationMode = 'single_line'
+    ) {
         this.rows = rows;
         this.promptEngine = new PromptEngine(mainTemplate, dictionary);
+        this.mode = mode;
     }
 
     public async generateAll(): Promise<StoryResult[]> {
         const results: StoryResult[] = [];
         
-        // Intro Context 추가
-        if (this.rows.length > 0 && this.rows[0].introContext) {
-            this.conversationHistory.push(`[System Intro]: ${this.rows[0].introContext}`);
-        }
-
-        console.log(`🚀 Start Story Orchestration (${this.rows.length} rows)`);
-
         for (const row of this.rows) {
-            // direction이 없으면 생성을 스킵
-            if (!row.direction || row.direction.trim() === "") {
-                continue;
-            }
-
-            //console.log(`\n▶ Processing [${row.key}] Speaker: ${row.speaker}`);
-
             try {
-                // 1. 프롬프트 생성 (여기서 캐릭터 파일도 자동 로드됨)
-                const prompt = this.promptEngine.buildPrompt(row, this.conversationHistory);
-
-                // 2. 모델 분기 처리
-                let generatedText = "";
-                let inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`
-                const modelKey = (row.model || "").toLowerCase();
-                const temperature = parseFloat(String(row.temperature || "0.5"));
+                // 1. 프롬프트 생성
+                const prompt = this.promptEngine.buildPrompt(row, this.history, this.mode);
+                const temperature = row.temperature !== undefined ? row.temperature : 0.5;
+                let inputText = "";
+                if(this.mode === 'single_line') {
+                    inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`
+                } else if (this.mode === 'full_script') {
+                    inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
+                    ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
+                }
                 
-                switch (modelKey) {
-                    case "claude" :
-                        generatedText = await sendToClaude(inputText, prompt, temperature);
+                // 2. 모델 호출
+                // row.model이 있으면 사용, 없으면 기본값
+                const modelName = row.model?.toLowerCase() || "gemini";
+                let rawOutput = "";
+
+                switch(modelName) {
+                    case "gpt":
+                        rawOutput = await sendToOpenAI(inputText, prompt, temperature);
                         break;
-                    case "gpt" :
-                        generatedText = await sendToOpenAI(inputText, prompt, temperature);
+                    case "claude":
+                        rawOutput = await sendToClaude(inputText, prompt, temperature);
                         break;
-                    case "gemini"  :
-                        generatedText = await sendToGemini(inputText, prompt, temperature);
+                    case "gemini":
+                        rawOutput = await sendToGemini(inputText, prompt, temperature);
                         break;
                     default:
-                        throw new Error(`Unsupported model type: ${modelKey}`);
+                        throw new Error(`Unsupported model: ${modelName}`);
+                }
+                
+
+                // 3. 모드에 따른 결과 파싱 (핵심)
+                if (this.mode === 'full_script') {
+                    // [Full Script 모드]
+                    // LLM이 여러 줄의 CSV를 뱉음 -> 파싱해서 여러 개의 Result로 변환
+                    const sceneId = row['sceneId'] || "unknown_scene";
+                    const parsedLines = this.parseFullScriptCSV(rawOutput, sceneId);
+                    results.push(...parsedLines);
+                    
+                    // 히스토리에 전체 대화 내용을 요약해서 넣거나, 마지막 대사를 넣음
+                    const historyLines = parsedLines.map(line => `${line['speaker']} : ${line['text']}`);
+                    this.history.push(...historyLines);
+                    
+                } else {
+                    // [Single Line 모드] (기존 방식)
+                    const cleanText = this.parseSingleLine(rawOutput, row['key']);
+                    results.push({ 
+                        key: row['key'], 
+                        result: cleanText 
+                    });
+                    this.history.push(`${row['speaker']}: ${cleanText}`);
                 }
 
-                // 3. 결과 파싱 (CSV 포맷 "key, text"에서 text만 추출)
-                const cleanText = this.parseOutput(generatedText, row.key);
-
-                // 4. 히스토리 누적
-                this.conversationHistory.push(`${row.speaker}: ${cleanText}`);
-
-                // 5. 결과 수집
-                results.push({
-                    key: row.key,
-                    result: cleanText
-                });
-
-                //console.log(`   ✅ Output: ${cleanText.substring(0, 40)}...`);
-
             } catch (error) {
-                console.error(`   ❌ Error:`, error);
-                results.push({ key: row.key, result: "[Error]" });
+                console.error(`Error processing row:`, error);
             }
         }
-
         return results;
     }
 
-    private parseOutput(text: string, key: string): string {
-        const parts = text.split(",");
+    // 기존 방식 파서
+    private parseSingleLine(text: any, key: string): string {
+        // 1. 입력값 검증: 문자열이 아니면 강제로 변환하거나 빈 문자열 처리
+        if (!text) return "";
+        
+        const safeText = typeof text === 'string' ? text : String(text);
+
+        const parts = safeText.split(",");
         if (parts.length >= 2) {
             // 첫 번째 쉼표 이후의 모든 텍스트를 합침 (대사에 쉼표 포함 가능성)
             return parts.slice(1).join(",").trim();
         }
         return text.replace(key, "").trim();
+    }
+
+    // 신규 방식 파서 (Full Script) - 안전 장치 및 컬럼 매핑 강화
+    private parseFullScriptCSV(text: any, inputSceneId:string): StoryResult[] {
+        // 1. 입력값 안전 검증
+        if (!text) {
+            console.warn("⚠️ parseFullScriptCSV received empty input.");
+            return [];
+        }
+
+        let rawString = "";
+        
+        // LLM이 JSON 객체로 반환했을 경우 처리
+        if (typeof text === 'object') {
+            rawString = text.content || text.result || JSON.stringify(text);
+        } else {
+            rawString = String(text);
+        }
+
+        // 2. 줄바꿈으로 분리
+        const lines = rawString.split("\n").filter(line => line.trim() !== "");
+        
+        return lines.map(line => {
+            // [중요] 구분자를 파이프(|)로 변경하여 쉼표 대사 문제 해결
+            const parts = line.split("|").map(p => p.trim());
+            
+            // 데이터가 충분하지 않으면 스킵 (빈 줄 방지)
+            // 프롬프트에서 항상 7개 컬럼을 요구했으므로 최소 5개 이상 확인
+            if (parts.length < 5) return null;
+
+            // 포맷: {{sceneId}} | id | speaker | emotion | text | choice_grade | reply_text
+            // 배열 구조 분해 할당
+            const [sceneId, id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
+
+            // Key 생성: SceneId_001 형태
+            // id가 숫자인지 확인 후 패딩 처리
+            const safeId = isNaN(Number(id)) ? id : String(id).padStart(3, '0');
+            const uniqueKey = `${inputSceneId}_${safeId}`;
+            
+            // 3. 반환 데이터 구성 
+            // 시트 헤더 이름과 정확히 일치하는 키값으로 객체를 만들어야 updateSheetData에서 자동 매핑됨
+            return {
+                // 시스템 식별용
+                sceneId: inputSceneId,
+                      
+                // 시트 컬럼 매핑용
+                key: uniqueKey,
+                speaker: speaker,
+                emotion: emotion,
+                text: textContent,              // 시트 헤더: text
+                choice_grade: choiceGrade || "", // 시트 헤더: choice_grade (없으면 빈값)
+                reply_text: replyText || ""     // 시트 헤더: reply_text (없으면 빈값)
+                
+            } as any; 
+
+        }).filter((item): item is StoryResult => item !== null);
     }
 }
