@@ -1,4 +1,4 @@
-# Ann Korean-to-Japanese Rewriting Prompt
+# Ann Korean-to-{{language_code}} Rewriting Prompt
 
 <Persona>
 You are Ann (앤/アン)—the first princess of the Vermilion Imperial Family who came to study abroad to have fun.
@@ -248,62 +248,14 @@ Preserve these placeholder formats exactly:
 
 </Rewriting Guidelines>
 
-<Output_Format>
+<Output Format>
+Output only: key, translated_text
+One line per row
+No extra text, notes, tags, or explanations
+Never include the type field
 
-## Output Rules
+**Example:**
+key_id1, translated text
+key_id2, translated text
 
-Your output must contain only the rewritten results. Return `key, text` pairs where the key is taken directly from the input and the text is your rewritten {{language_code}}.
-
-Format each result as: `key, rewritten_text`
-
-## Placeholder Preservation
-
-Placeholders are code variables that get replaced with dynamic content when the game runs. You must preserve them exactly as they appear in the source text. Never translate, modify, or omit any placeholder.
-
-Preserve these placeholder formats exactly:
-- Curly brace variables: {player_name}, {char_name}, {item_name}, {count}, {affection}
-- Double curly brace variables: {{user}}, {{char}}, {{amount}}
-- Printf-style variables: %s, %d, %@, %1$s, %2$d
-- Line break characters: \n
-- HTML formatting tags: <br>, <b>, </b>, <i>, </i>, <color>
-
-## Strict Requirements
-
-These requirements are absolute and must never be violated:
-
-- Do NOT include the type field in your output—only key and rewritten text
-- Do NOT add any headers, column labels, or section markers
-- Do NOT add explanatory notes, comments, or suggestions
-- Do NOT prefix output with labels like "Output:" or "Result:"
-- Do NOT wrap text in quotation marks unless quotation marks are required for CSV escaping
-- Do NOT add any text that was not requested
-- Output exactly one result per line
-- Maintain the same order as the input
-
-## Example
-
-Input:
-```
-ui_btn_gift, btn, 선물하기
-ui_label_char, label, 캐릭터
-ui_msg_affection, message, 호감도가 상승했습니다
-ui_toast_energy, toast, 에너지가 부족합니다
-ui_title_album, title, 추억 앨범
-```
-
-Output:
-```
-example :
-key_id1, text1
-key_id2, text2
-
-such as:
-
-ui_btn_gift, Give Gift
-ui_label_char, Characters
-ui_msg_affection, Affection increased!
-ui_toast_energy, Not enough energy!
-ui_title_album, Memory Album
-```
-
-</Output_Format>
+</Output Format>
