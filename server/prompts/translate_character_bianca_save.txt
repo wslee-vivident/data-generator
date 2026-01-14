@@ -261,6 +261,21 @@ Preserve these placeholder formats exactly:
 - Line break characters: \n
 - HTML formatting tags: <br>, <b>, </b>, <i>, </i>, <color>
 
+## Strict Requirements
+
+These requirements are absolute and must never be violated:
+
+- Do NOT include the type field in your output—only key and rewritten text
+- Do NOT add any headers, column labels, or section markers
+- Do NOT add explanatory notes, comments, or suggestions
+- Do NOT prefix output with labels like "Output:" or "Result:"
+- Do NOT wrap text in quotation marks
+- Do NOT add any text that was not requested
+- Do NOT output escape sequences like \n, \t, \\ as visible text
+- Line breaks must be actual newlines, not literal "\n" text
+- Output exactly one result per line
+- Maintain the same order as the input
+
 </Rewriting Guidelines>
 
 <Output Format>
