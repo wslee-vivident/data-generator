@@ -6,6 +6,7 @@ import { sendToClaude } from "./anthropicAI";
 import { send } from "process";
 
 type GenerationMode = 'single_line' | 'full_script';
+const nunjucks = require("nunjucks");
 
 export class StoryOrchestrator {
     private rows: BaseStoryRow[];
@@ -30,7 +31,7 @@ export class StoryOrchestrator {
         for (const row of this.rows) {
             try {
                 // 1. 프롬프트 생성
-                const prompt = this.promptEngine.buildPrompt(row, this.history, this.mode);
+                let prompt = this.promptEngine.buildPrompt(row, this.history, this.mode);
                 const temperature = row.temperature !== undefined ? row.temperature : 0.5;
                 let inputText = "";
                 if(this.mode === 'single_line') {
@@ -38,6 +39,8 @@ export class StoryOrchestrator {
                 } else if (this.mode === 'full_script') {
                     inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
                     ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
+                    const systemMode = row.systemKind || "story";
+                    prompt = nunjucks.renderString(prompt, { systemMode });
                 }
                 
                 // 2. 모델 호출

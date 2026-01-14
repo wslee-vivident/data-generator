@@ -53,6 +53,7 @@ async function handleStoryGeneration(req: express.Request, res: express.Response
         const tasks = Object.entries(groupedRows).map(async ([sceneId, rows]) => {
             console.log(`🚀 Scene: ${sceneId} (${rows.length} rows)`);
             const orchestrator = new StoryOrchestrator(rows, mainTemplate, dictionary, mode);
+            
             return await orchestrator.generateAll();
         });
 
