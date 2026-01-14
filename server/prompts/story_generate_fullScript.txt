@@ -127,6 +127,7 @@ Each choice block MUST follow this structure:
 </Mandatory_Choice_Block>
 
 <Output_Example>
+{% if systemMode == "challenge" or systemMode == "exploration" %}
 ## Visual Reference (How it appears in spreadsheet)
 | sceneId | key_id | speaker | emotion | text | choice_grade | reply_text |
 |---------|--------|---------|---------|------|--------------|------------|
@@ -145,5 +146,7 @@ Each choice block MUST follow this structure:
 {{sceneId}} | 4 | 선택지 | CONTENT | 역시 이로하는 활기차구나. | AWESOME | 나에게 있어선 에너지가 제일 중요하다고!
 {{sceneId}} | 5 | 선택지 | NEUTRAL | 어, 안녕. | BRILLIANT | 조금은 흐리지만, 날씨가 선선해서 좋지 않아?
 {{sceneId}} | 6 | 선택지 | SAD | 오늘 비내리는데 무슨 말이야? | GOOD | 아 그래.. 미안..
+{% else %}
+
 ```
 </Output_Example>
