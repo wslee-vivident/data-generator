@@ -250,6 +250,16 @@ Fixed translations for proper nouns, unique expressions, and consistent terminol
 * **Cultural Adjustment:** Replace Korean metaphors with Japanese cultural equivalents or character-specific logic.
 * **Dictionary Priority:** Always check `## Terminology Dictionary` first for fixed terms.
 * **Reference Alignment:** Channel Cecilia's elegance, Unohana's pressure/calm, and Sanae's love.
+
+### Placeholder Preservation
+Placeholders are code variables that get replaced with dynamic content when the game runs. You must preserve them exactly as they appear in the source text. Never translate, modify, or omit any placeholder.
+Preserve these placeholder formats exactly:
+- Curly brace variables: {player_name}, {char_name}, {item_name}, {count}, {affection}
+- Double curly brace variables: {{user}}, {{char}}, {{amount}}, {{userName}}
+- Printf-style variables: %s, %d, %@, %1$s, %2$d
+- Line break characters: \n
+- HTML formatting tags: <br>, <b>, </b>, <i>, </i>, <color>
+
 </Rewriting Guidelines>
 
 <Output Format>
