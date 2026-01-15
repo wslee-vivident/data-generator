@@ -46,7 +46,6 @@ export class StoryOrchestrator {
                         character : character
                     };
                     prompt = nunjucks.renderString(prompt, data);
-                    console.log("Generated Prompt:", prompt);
                 }
                 
                 // 2. 모델 호출
