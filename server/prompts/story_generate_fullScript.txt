@@ -36,15 +36,20 @@ You are a commercial game scenario writer specializing in subculture visual nove
 {{place}}
 {{Location}}
 
+
 ## Character Profiles
+{% if systemMode != "exploration" and character != "Player" %}
 ### Male Lead (Player)
 {{player_info}}
 *Note:* He is the anchor. He speaks briefly to let the female character shine.
 
-{% if systemMode != "exploration" and character != "Player" %}
 ### Female Lead (Target)
 {{character_info}}
 *Note:* Capture her unique speech patterns and personality defined above.
+{% else %}
+### Male Lead (Player)
+{{player_info}}
+*Note:* He is the main actor. He speaks briefly and shows how the things going to solve.
 {% endif %}
 
 ## Lore & Terms
@@ -66,10 +71,18 @@ You are a commercial game scenario writer specializing in subculture visual nove
 {{direction}}
 
 ### Execution Logic
+{% if systemMode != "exploration" and character != "Player" %}
 1. Analyze the `Plot Outline`.
 2. Break it down into a sequence of dialogue and narration lines.
 3. Assign appropriate emotions and speakers.
 4. **Auto-increment** the `key_id` for every line.
+{% else %}
+1. Analyze the `Plot Outline`.
+2. Break it down into a sequence of dialogue and narration lines.
+3. Assign appropriate emotions and speakers.
+4. **Auto-increment** the `key_id` for every line.
+5. At the first 'Narration' will start telling the situation base on 'Plot Outline'.
+{% endif %}
 </Direction>
 
 <Output_Rules>
