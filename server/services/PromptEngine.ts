@@ -23,6 +23,8 @@ export class PromptEngine {
 
         const commonReplacements : Record<string, string> = {
             "{{oshiz_dictionary}}" : this.dictionary,
+            "{{char}}" : String(row['speaker']).trim(),
+            "{{user}}" : "Player",
             "{{scene_id}}" : row['sceneId'] || "",
             "{{key}}" : row['key'] || "",
             "{{Location}}" : row['location'] || "",
