@@ -55,8 +55,9 @@ export class StoryOrchestrator {
                     case "claude":
                         rawOutput = await sendToClaude(inputText, prompt, temperature);
                         break;
-                    case "gemini":
-                        rawOutput = await sendToGemini(inputText, prompt, temperature);
+                    case "gemini_pro" :
+                    case "gemini_flash" :
+                        rawOutput = await sendToGemini(inputText, prompt, temperature, modelName);
                         break;
                     default:
                         throw new Error(`Unsupported model: ${modelName}`);
