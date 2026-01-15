@@ -40,7 +40,12 @@ export class StoryOrchestrator {
                     inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
                     ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
                     const systemMode = row.systemKind || "story";
-                    prompt = nunjucks.renderString(prompt, { systemMode });
+                    const character = row.speaker || "Player";
+                    const data = {
+                        systemMode : systemMode,
+                        character : character
+                    };
+                    prompt = nunjucks.renderString(prompt, data);
                 }
                 
                 // 2. 모델 호출
