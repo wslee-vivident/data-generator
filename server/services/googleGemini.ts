@@ -18,10 +18,11 @@ export async function sendToGemini(
                 systemInstruction : {
                     parts : [{text : systemPrompt}]
                 },
+                /*
                 thinkingConfig : {
                     thinkingLevel : ThinkingLevel.MINIMAL,
                     includeThoughts : false
-                }
+                }*/
             },
             contents : [
                 {
