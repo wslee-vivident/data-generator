@@ -141,9 +141,9 @@ export class StoryOrchestrator {
             // 프롬프트에서 항상 7개 컬럼을 요구했으므로 최소 5개 이상 확인
             if (parts.length < 5) return null;
 
-            // 포맷: {{sceneId}} | id | speaker | emotion | text | choice_grade | reply_text
+            // 포맷:  id | speaker | emotion | text | choice_grade | reply_text
             // 배열 구조 분해 할당
-            const [sceneId, id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
+            const [id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
 
             // Key 생성: SceneId_001 형태
             // id가 숫자인지 확인 후 패딩 처리
