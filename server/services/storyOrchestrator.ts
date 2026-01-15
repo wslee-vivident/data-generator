@@ -40,7 +40,12 @@ export class StoryOrchestrator {
                     inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
                     ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
                     const systemMode = row.systemKind || "story";
-                    prompt = nunjucks.renderString(prompt, { systemMode });
+                    const character = row.speaker || "Player";
+                    const data = {
+                        systemMode : systemMode,
+                        character : character
+                    };
+                    prompt = nunjucks.renderString(prompt, data);
                 }
                 
                 // 2. 모델 호출
@@ -55,8 +60,9 @@ export class StoryOrchestrator {
                     case "claude":
                         rawOutput = await sendToClaude(inputText, prompt, temperature);
                         break;
-                    case "gemini":
-                        rawOutput = await sendToGemini(inputText, prompt, temperature);
+                    case "gemini_pro" :
+                    case "gemini_flash" :
+                        rawOutput = await sendToGemini(inputText, prompt, temperature, modelName);
                         break;
                     default:
                         throw new Error(`Unsupported model: ${modelName}`);
@@ -135,9 +141,9 @@ export class StoryOrchestrator {
             // 프롬프트에서 항상 7개 컬럼을 요구했으므로 최소 5개 이상 확인
             if (parts.length < 5) return null;
 
-            // 포맷: {{sceneId}} | id | speaker | emotion | text | choice_grade | reply_text
+            // 포맷:  id | speaker | emotion | text | choice_grade | reply_text
             // 배열 구조 분해 할당
-            const [sceneId, id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
+            const [id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
 
             // Key 생성: SceneId_001 형태
             // id가 숫자인지 확인 후 패딩 처리

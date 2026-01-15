@@ -3,26 +3,42 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 export async function sendToGemini(
     inputText : string, 
     systemPrompt: string,
-    temperature: number = 0.5
+    temperature: number = 0.5,
+    modelSelect: string = "gemini_flash"
 ) : Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if(!apiKey) throw new Error('Gemini API key is not set in environment variables.');
 
     const genAI = new GoogleGenAI({apiKey});
 
+    let config = {};
+    let model = "";
+    if(modelSelect === "gemini_pro") {
+        model = "gemini-3-pro-preview";
+        config = {
+            temperature : temperature,
+            systemInstruction : {
+                parts : [{text : systemPrompt}]
+            }
+        };
+    } else if(modelSelect === "gemini_flash") {
+        model = "gemini-3-flash-preview";
+        config = {
+            temperature : temperature,
+            systemInstruction : {
+                parts : [{text : systemPrompt}]
+            },
+            thinkingConfig : {
+                thinkingLevel : ThinkingLevel.MINIMAL,
+                includeThoughts : false
+            }
+        };
+    }
+
     try {
         const result = await genAI.models.generateContent({
-            model : "gemini-2.5-pro",
-            config : {
-                temperature : temperature,
-                systemInstruction : {
-                    parts : [{text : systemPrompt}]
-                },
-                thinkingConfig : {
-                    thinkingLevel : ThinkingLevel.MINIMAL,
-                    includeThoughts : false
-                }
-            },
+            model : model,
+            config : config,
             contents : [
                 {
                     role : "user",
