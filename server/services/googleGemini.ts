@@ -12,17 +12,16 @@ export async function sendToGemini(
 
     try {
         const result = await genAI.models.generateContent({
-            model : "gemini-3-pro-preview",
+            model : "gemini-3-flash-preview",
             config : {
                 temperature : temperature,
                 systemInstruction : {
                     parts : [{text : systemPrompt}]
                 },
-                /*
                 thinkingConfig : {
                     thinkingLevel : ThinkingLevel.MINIMAL,
                     includeThoughts : false
-                }*/
+                }
             },
             contents : [
                 {
