@@ -40,7 +40,7 @@ UI element type. This determines character limits, style, and punctuation rules:
 
 | Type | Max Length | Style | Articles | End Punctuation |
 |------|------------|-------|----------|-----------------|
-| btn | 15 chars | Imperative verb, Title Case | Never | Never |
+| btn | 15 chars | Imperative verb, Title Case | Conditional (see rules) | Never |
 | title | 15 chars | Noun phrase, Title Case | Conditional | Never |
 | label | 20 chars | Noun or short phrase, Title Case | Never | Never |
 | tab | 12 chars | Noun, Title Case, plural for categories | Never | Never |
@@ -51,8 +51,8 @@ UI element type. This determines character limits, style, and punctuation rules:
 | dropdown | 20 chars | Selection text, Sentence case | Conditional | Never |
 | desc | 50-200 chars | Complete sentence, Sentence case | Required | Period |
 | tooltip | 60 chars | Concise description, Sentence case | Conditional | Period if complete sentence |
-| toast | 40 chars | Short message, Sentence case | Conditional | Never (use ! for success) |
-| message | 50 chars | Complete sentence, Sentence case | Required | Period or ! |
+| toast | 40 chars | Short message, Sentence case | Conditional | Period (rare !) |
+| message | 50 chars | Complete sentence, Sentence case | Required | Period (rare !) |
 | error | 50 chars | Problem + solution, Sentence case | Required | Period |
 | etc | Match original length | Context-dependent | Context-dependent | Context-dependent |
 
@@ -187,18 +187,43 @@ Use these mappings when terms are not found in the Terminology Dictionary.
 | 자동 | Auto | |
 
 ### Payment & Account
-| Korean | {{language_code}} |
-|--------|-------------------|
-| 구매 | Purchase |
-| 결제 | Payment |
-| 환불 | Refund |
-| 영수증 | Receipt |
-| 구독 | Subscription |
-| 로그인 | Log In |
-| 로그아웃 | Log Out |
-| 계정 | Account |
-| 비밀번호 | Password |
-| 알림 | Notifications |
+| Korean | {{language_code}} | Usage Context |
+|--------|-------------------|---------------|
+| 구매 | Purchase | The act of buying, item acquisition |
+| 결제 | Payment | Transaction process, billing, authorization |
+| 환불 | Refund | |
+| 영수증 | Receipt | |
+| 구독 | Subscription | |
+| 로그인 | Log In | |
+| 로그아웃 | Log Out | |
+| 계정 | Account | |
+| 비밀번호 | Password | |
+| 알림 | Notifications | (Not "Alerts") |
+
+### Payment vs Purchase Distinction
+
+These terms are NOT interchangeable:
+
+**Payment** - Use for transaction/billing process:
+- "Payment failed."
+- "Payment complete."
+- "Processing payment..."
+- "Payment method"
+- "Payment information"
+
+**Purchase** - Use for the buying action/result:
+- "Purchase successful."
+- "Make a purchase"
+- "Purchase history"
+- "Confirm purchase"
+- "Your purchase"
+
+```
+WRONG: Purchase failed (transaction error → Payment)
+WRONG: Payment successful (buying result → Purchase)
+CORRECT: Payment failed. Please try again.
+CORRECT: Purchase successful.
+```
 
 ### Filter & Sort
 | Korean | {{language_code}} |
@@ -239,10 +264,14 @@ These are not real {{language_code}}. Never output them.
 
 ### Allowed Abbreviations
 
-Only these are permitted:
-Lv., Max, Min, Pt., EP, Ch., vs, h, m, s, d
+Only these abbreviations are permitted in UI text:
 
-Do not invent new abbreviations.
+**Levels & Stats:** Lv., EXP, HP, MP, ATK, DEF
+**Time Units:** h, m, s, d (e.g., 3h 30m)
+**Common Terms:** DM, BGM, FAQ, vs, Max, Min
+**Format Markers:** Pt., EP, Ch.
+
+Do not invent new abbreviations. When in doubt, use the full word.
 
 </Glossary>
 
@@ -300,7 +329,7 @@ Articles (a, an, the) are one of the most common error sources. Follow these rul
 
 | UI Type | Article Rule | Rationale |
 |---------|--------------|-----------|
-| btn | NEVER use articles | Buttons are action commands, not sentences |
+| btn | CONDITIONAL | Omit for common actions; include for specific singular nouns |
 | title | CONDITIONAL | See detailed rules below |
 | label | NEVER use articles | Labels are category identifiers |
 | tab | NEVER use articles | Tabs are navigation destinations |
@@ -319,10 +348,10 @@ Use indefinite articles when:
 - Result is one unspecified item: "You received **a** gift"
 
 ```
-✅ Select a character
-✅ Choose a gift to send
-✅ Pick an outfit
-✅ A new episode is available
+CORRECT: Select a character
+CORRECT: Choose a gift to send
+CORRECT: Pick an outfit
+CORRECT: A new episode is available
 ```
 
 ### When to Use "the"
@@ -333,9 +362,9 @@ Use definite articles when:
 - Only one exists in the system: "**the** daily login bonus"
 
 ```
-✅ The episode is now unlocked
-✅ View the message
-✅ Complete the tutorial
+CORRECT: The episode is now unlocked
+CORRECT: View the message
+CORRECT: Complete the tutorial
 ```
 
 ### When to OMIT Articles
@@ -348,49 +377,56 @@ Omit articles when:
 - Navigation destinations: "Go to Shop", "View Inventory"
 
 ```
-✅ Give Gift (button)
-✅ Characters (tab)
-✅ Inventory (label)
-✅ Locked (status)
+CORRECT: Give Gift (button)
+CORRECT: Characters (tab)
+CORRECT: Inventory (label)
+CORRECT: Locked (status)
 ```
 
 ### Common Article Mistakes
 
-#### ❌ Adding articles to buttons
+#### Adding unnecessary articles to common action buttons (WRONG)
 ```
-❌ Give a Gift → ✅ Give Gift
-❌ Send a Message → ✅ Send Message
-❌ Start a Date → ✅ Start Date
-❌ Claim the Reward → ✅ Claim Reward
-```
-
-#### ❌ Omitting articles in selection prompts
-```
-❌ Select character → ✅ Select a character
-❌ Choose gift to send → ✅ Choose a gift to send
-❌ Pick outfit → ✅ Pick an outfit
+WRONG: Give a Gift → CORRECT: Give Gift
+WRONG: Send a Message → CORRECT: Send Message
+WRONG: Claim a Reward → CORRECT: Claim Reward
 ```
 
-#### ❌ Omitting articles in complete sentences
+#### Omitting articles for specific singular nouns in buttons (WRONG)
 ```
-❌ Gift has been sent → ✅ The gift has been sent
-❌ Message was delivered → ✅ Your message was delivered
-❌ Episode is now unlocked → ✅ The episode is now unlocked
-❌ New story available → ✅ A new story is available
-```
-
-#### ❌ Adding articles to navigation buttons
-```
-❌ Go to the Shop → ✅ Go to Shop
-❌ View the Inventory → ✅ View Inventory
-❌ Open the Settings → ✅ Open Settings
+WRONG: Create Moment → CORRECT: Create a Moment
+WRONG: Start Story → CORRECT: Start the Story
+WRONG: Exit Event → CORRECT: Exit the Event
+WRONG: Begin Journey → CORRECT: Begin the Journey
 ```
 
-#### ❌ Mixing articles with possessives
+#### Omitting articles in selection prompts (WRONG)
 ```
-❌ The your inventory → ✅ Your inventory
-❌ The Luca's story → ✅ Luca's Story
-❌ A your message → ✅ Your message
+WRONG: Select character → CORRECT: Select a character
+WRONG: Choose gift to send → CORRECT: Choose a gift to send
+WRONG: Pick outfit → CORRECT: Pick an outfit
+```
+
+#### Omitting articles in complete sentences (WRONG)
+```
+WRONG: Gift has been sent → CORRECT: The gift has been sent
+WRONG: Message was delivered → CORRECT: Your message was delivered
+WRONG: Episode is now unlocked → CORRECT: The episode is now unlocked
+WRONG: New story available → CORRECT: A new story is available
+```
+
+#### Adding articles to navigation buttons (WRONG)
+```
+WRONG: Go to the Shop → CORRECT: Go to Shop
+WRONG: View the Inventory → CORRECT: View Inventory
+WRONG: Open the Settings → CORRECT: Open Settings
+```
+
+#### Mixing articles with possessives (WRONG)
+```
+WRONG: The your inventory → CORRECT: Your inventory
+WRONG: The Luca's story → CORRECT: Luca's Story
+WRONG: A your message → CORRECT: Your message
 ```
 
 ### Article Decision Flowchart
@@ -412,39 +448,47 @@ When uncertain, follow this process:
 
 | UI Type | Period (.) | Exclamation (!) | None |
 |---------|------------|-----------------|------|
-| btn | ❌ | ❌ | ✅ |
-| title | ❌ | ❌ | ✅ |
-| label | ❌ | ❌ | ✅ |
-| tab | ❌ | ❌ | ✅ |
-| toggle | ❌ | ❌ | ✅ |
-| radio/checkbox | ❌ | ❌ | ✅ |
-| option/dropdown | ❌ | ❌ | ✅ |
-| tooltip | ✅ (if complete sentence) | ❌ | ✅ (if fragment) |
-| toast | ❌ | ✅ (success only) | ✅ (neutral info) |
-| message | ✅ (info) | ✅ (success/celebration) | ❌ |
-| desc | ✅ | ❌ | ❌ |
-| error | ✅ | ❌ | ❌ |
+| btn | No | No | Yes |
+| title | No | No | Yes |
+| label | No | No | Yes |
+| tab | No | No | Yes |
+| toggle | No | No | Yes |
+| radio/checkbox | No | No | Yes |
+| option/dropdown | No | No | Yes |
+| tooltip | Yes (if complete sentence) | No | Yes (if fragment) |
+| toast | Yes | Rare (major milestones only) | No |
+| message | Yes | Rare (major milestones only) | No |
+| desc | Yes | No | No |
+| error | Yes | No | No |
+| dialog question | Question mark | No | No |
 
 ### Exclamation Mark Rules
 
-**USE exclamation marks for:**
-- Success confirmations: "Gift sent!", "Saved!"
-- Rewards/acquisitions: "Reward received!", "New outfit unlocked!"
-- Celebrations: "Congratulations!", "Level up!"
-- Positive milestones: "Episode complete!"
+**General Principle:** Use periods by default. Exclamation marks should be rare and reserved for genuinely celebratory moments.
+
+**USE exclamation marks ONLY for:**
+- Major celebrations: "Congratulations!", "Happy Anniversary!"
+- Significant milestones: "Level up!", "Episode complete!"
+
+**USE periods for:**
+- Success confirmations: "Purchase successful.", "Saved."
+- Rewards/acquisitions: "Reward received.", "New outfit unlocked."
+- Warnings: "Not enough gems.", "This action cannot be undone."
+- Error messages: "Something went wrong.", "Connection lost."
+- Tutorial/encouragement: "Level up to unlock various benefits."
 
 **NEVER use exclamation marks for:**
-- Error messages: "Not enough gems." (not "Not enough gems!")
-- Warnings: "This action cannot be undone."
-- Neutral information: "Your session has expired."
+- Error messages or warnings
+- Routine success messages
 - Buttons, titles, labels, tabs
 
 ```
-✅ Gift received! (toast - success)
-✅ Not enough energy. (error)
-✅ Episode unlocked! (message - celebration)
-✅ Connection lost. Please try again. (error)
-❌ Error! Something went wrong! (too alarming)
+CORRECT: Purchase successful. (toast - routine success)
+CORRECT: Not enough energy. (toast - warning)
+CORRECT: Level up! (message - major milestone)
+CORRECT: Connection lost. Please try again. (error)
+WRONG: Gift sent! (excessive for routine action)
+WRONG: Error! Something went wrong! (alarming)
 ```
 
 ---
@@ -467,21 +511,21 @@ When uncertain, follow this process:
 
 Always use "Your" (not "the" or "a") for player-owned items:
 ```
-✅ Your Inventory
-✅ Your Messages
-✅ Your Profile
-❌ The Inventory
-❌ a Inventory
+CORRECT: Your Inventory
+CORRECT: Your Messages
+CORRECT: Your Profile
+WRONG: The Inventory
+WRONG: a Inventory
 ```
 
 ### Examples
 
 ```
-✅ Luca's Story (his personal story)
-✅ Character Stories (category containing multiple)
-✅ Your Wardrobe (player's items)
-✅ Character Profile (system feature)
-❌ Luca's Profile (unless it's literally his dating profile in-game)
+CORRECT: Luca's Story (his personal story)
+CORRECT: Character Stories (category containing multiple)
+CORRECT: Your Wardrobe (player's items)
+CORRECT: Character Profile (system feature)
+WRONG: Luca's Profile (unless it's literally his dating profile in-game)
 ```
 
 ---
@@ -506,82 +550,73 @@ Korean lacks prepositions, so you must choose the correct {{language_code}} prep
 ### Common Preposition Mistakes
 
 ```
-❌ Go Shop → ✅ Go to Shop
-❌ Unlocks after 2 days → ✅ Unlocks in 2 days
-❌ Required to unlock → ✅ Required for unlock
-❌ Reward of event → ✅ Reward from event
-❌ Changed into → ✅ Changed to
+WRONG: Go Shop → CORRECT: Go to Shop
+WRONG: Unlocks after 2 days → CORRECT: Unlocks in 2 days
+WRONG: Required to unlock → CORRECT: Required for unlock
+WRONG: Reward of event → CORRECT: Reward from event
+WRONG: Changed into → CORRECT: Changed to
 ```
 
 ---
 
-## Contextual Abbreviation Guide
+## Full Words Principle
 
-Different UI contexts have different space constraints. Adjust verbosity accordingly.
+**General Rule:** Use complete words unless space is critically limited. Abbreviated forms can feel cheap or informal.
 
-### Maximum Abbreviation (Filters, Sort options, Status badges)
-Space: 10 characters or fewer
+### Mandatory Full Forms
+
+| WRONG | CORRECT |
+|-------|---------|
+| Info | Information |
+| Alerts | Notifications |
+| App Info | App Information |
+| Version Info | Version Information |
+| Desc | Description |
+| Char | Character |
+| Msg | Message |
+| Qty | Quantity |
+
+### Allowed Abbreviations
+
+Only these abbreviations are permitted:
+- **Levels/Stats:** Lv., EXP, HP, MP, ATK, DEF
+- **Time:** h, m, s, d (e.g., 3h 30m)
+- **Common:** DM, BGM, FAQ, vs, Max, Min
+- **Format:** Pt., EP, Ch.
+
+Do not invent new abbreviations beyond this list.
+
+### Context-Based Length Adjustment
+
+When space is critically limited, prioritize clarity over completeness:
+
+**Filters/Sort (10 chars or fewer):**
 ```
 Korean: 최신순으로 정렬
-❌ Sort by Newest First
-✅ Newest
+CORRECT: Newest
 
 Korean: 인기 있는 순서
-❌ Sort by Popularity  
-✅ Popular
-
-Korean: 완료되지 않음
-❌ Not Completed Yet
-✅ Incomplete
+CORRECT: Popular
 ```
 
-### Moderate Abbreviation (Tabs, Labels)
-Space: 12-20 characters
+**Tabs/Labels (12-20 chars):**
 ```
 Korean: 요청서 양식 목록
-❌ Request Forms List
-✅ Requests
+WRONG: Request Forms List
+CORRECT: Requests
 
 Korean: 캐릭터 목록
-❌ List of Characters
-✅ Characters
-
-Korean: 선물 아이템 보관함
-❌ Gift Item Storage Box
-✅ Gifts
+CORRECT: Characters
 ```
 
-### Minimal Abbreviation (Buttons)
-Space: 15 characters
+**Buttons (15 chars):**
 ```
 Korean: 선물을 보내기
-✅ Send Gift
-
-Korean: 대화를 시작하기
-✅ Start Chat
+CORRECT: Send Gift
 ```
 
-### Full Expression (Descriptions, Messages)
-Space: 50-200 characters
-```
-Korean: 캐릭터의 호감도를 올리면 새로운 스토리가 해제됩니다
-✅ Increase a character's intimacy to unlock new stories.
-```
-
-### Abbreviation Priority
-
-When you must shorten, remove in this order:
-1. Articles (a, an, the) - remove first
-2. Prepositions (of, for, to) - remove if meaning stays clear
-3. Adjectives (new, special) - remove if not essential
-4. Helper verbs (is, are, has been) - convert to shorter form
-
-```
-Full: "A new episode is now available for you"
-→ "New episode available" (toast)
-→ "New Episode" (badge)
-→ "New" (minimal badge)
-```
+**Descriptions (50-200 chars):**
+Use full sentences with complete words.
 
 ---
 
@@ -596,24 +631,32 @@ Buttons are action triggers. Players tap or click them to make something happen.
 **Rules:**
 - Use imperative verbs (commands)
 - Title Case capitalization
-- NO articles ever
 - NO punctuation ever
 - Maximum 15 characters
 
-**Pattern:** `[Verb]` or `[Verb] + [Object]`
+**Article Rules for Buttons:**
+- **Short action + generic object (common actions):** Omit articles
+  - "Give Gift", "Send Message", "Claim Reward"
+- **Action + specific singular countable noun:** Include "a" or "the"
+  - "Create a Moment", "Start the Story", "Exit the Event"
+- **Exception:** If including an article exceeds 12 characters, you may omit it for brevity
+
+**Pattern:** `[Verb]` or `[Verb] + [Article] + [Object]`
 
 ```
-✅ Give Gift
-✅ Send Message
-✅ Start Date
-✅ Claim Reward
-✅ Save
-✅ Confirm
+CORRECT: Give Gift (common action, generic object)
+CORRECT: Send Message (common action, generic object)
+CORRECT: Create a Moment (specific singular noun)
+CORRECT: Start the Story (specific unique noun)
+CORRECT: Exit the Event (specific contextual noun)
+CORRECT: Save
+CORRECT: Confirm
 
-❌ Give a Gift (article)
-❌ Send Message. (punctuation)
-❌ Sending Message (gerund)
-❌ Please Send (please)
+WRONG: Create Moment (missing article for singular noun)
+WRONG: Start Story (missing article for specific noun)
+WRONG: Send Message. (punctuation)
+WRONG: Sending Message (gerund)
+WRONG: Please Send (please)
 ```
 
 ### title
@@ -630,13 +673,13 @@ Titles label screens, sections, or features.
 **Pattern:** `[Noun]` or `[Adjective] + [Noun]`
 
 ```
-✅ Character Profile
-✅ Gift List
-✅ Memory Album
-✅ Daily Tasks
+CORRECT: Character Profile
+CORRECT: Gift List
+CORRECT: Memory Album
+CORRECT: Daily Tasks
 
-❌ The Character Profile (unnecessary article)
-❌ Character Profile. (punctuation)
+WRONG: The Character Profile (unnecessary article)
+WRONG: Character Profile. (punctuation)
 ```
 
 ### label and tab
@@ -654,15 +697,15 @@ Labels and tabs are navigation elements.
 - tab: Maximum 12 characters
 
 ```
-✅ Characters (category - plural)
-✅ Episodes (category - plural)
-✅ Outfits (category - plural)
-✅ Shop (destination - singular)
-✅ Profile (unique - singular)
-✅ Schedule (unique - singular)
+CORRECT: Characters (category - plural)
+CORRECT: Episodes (category - plural)
+CORRECT: Outfits (category - plural)
+CORRECT: Shop (destination - singular)
+CORRECT: Profile (unique - singular)
+CORRECT: Schedule (unique - singular)
 
-❌ The Characters (article)
-❌ Character (singular for category)
+WRONG: The Characters (article)
+WRONG: Character (singular for category)
 ```
 
 ### desc and tooltip
@@ -678,13 +721,13 @@ Descriptions provide detailed information.
 - tooltip: Maximum 60 characters
 
 ```
-✅ Increase your intimacy to unlock new stories.
-✅ Select a character to view their profile.
-✅ This item can only be used once.
-✅ Required: Lv. 10
+CORRECT: Increase your intimacy to unlock new stories.
+CORRECT: Select a character to view their profile.
+CORRECT: This item can only be used once.
+CORRECT: Required: Lv. 10
 
-❌ Increase intimacy to unlock new stories (missing article/possessive)
-❌ select a character (wrong capitalization)
+WRONG: Increase intimacy to unlock new stories (missing article/possessive)
+WRONG: select a character (wrong capitalization)
 ```
 
 ### toast
@@ -694,20 +737,19 @@ Toasts provide brief feedback.
 **Rules:**
 - Short messages
 - Sentence case capitalization
-- NO period
-- Exclamation mark for success/celebration only
+- Period for most messages
+- Exclamation mark only for major milestones (rare)
 - Articles when grammatically needed
 - Maximum 40 characters
 
 ```
-✅ Gift sent!
-✅ Saved!
-✅ Not enough energy
-✅ Connection restored
+CORRECT: Gift sent.
+CORRECT: Saved.
+CORRECT: Not enough energy.
+CORRECT: Connection restored.
 
-❌ Gift sent. (period instead of !)
-❌ Not enough energy! (! on non-success)
-❌ gift sent! (wrong capitalization)
+WRONG: Gift sent! (excessive exclamation)
+WRONG: gift sent. (wrong capitalization)
 ```
 
 ### message
@@ -718,16 +760,17 @@ Messages provide important feedback.
 - Complete sentences
 - Sentence case capitalization
 - REQUIRED: correct article usage
-- Period for information, exclamation for success
+- Period for most messages; exclamation only for major milestones
 - Maximum 50 characters
 
 ```
-✅ Your gift has been sent!
-✅ A new episode is available.
-✅ Your progress has been saved.
+CORRECT: Your gift has been sent.
+CORRECT: A new episode is available.
+CORRECT: Your progress has been saved.
+CORRECT: Level up! (major milestone - exclamation OK)
 
-❌ Gift has been sent! (missing article)
-❌ New episode is available (missing article)
+WRONG: Gift has been sent. (missing possessive/article)
+WRONG: New episode is available (missing article)
 ```
 
 ### error
@@ -743,13 +786,13 @@ Error messages inform players of problems.
 - Maximum 50 characters
 
 ```
-✅ Not enough gems. Visit the shop?
-✅ Connection lost. Please try again.
-✅ The item could not be found.
+CORRECT: Not enough gems. Visit the shop?
+CORRECT: Connection lost. Please try again.
+CORRECT: The item could not be found.
 
-❌ Not enough gems! (exclamation)
-❌ You don't have enough gems (blaming)
-❌ Error occurred (vague, no solution)
+WRONG: Not enough gems! (exclamation)
+WRONG: You don't have enough gems (blaming)
+WRONG: Error occurred (vague, no solution)
 ```
 
 ---
@@ -762,13 +805,13 @@ Korean grammatical patterns must be converted to natural {{language_code}} equiv
 |----------------|--------------------------|---------|
 | ~하기 | Base verb | 선물하기 → Give Gift |
 | ~중 | -ing form | 로딩중 → Loading |
-| ~완료 | Past tense / "complete" | 저장완료 → Saved! |
-| ~부족 | Not enough ~ | 에너지 부족 → Not enough energy |
-| ~획득 | Received / Obtained | 선물 획득 → Gift received |
+| ~완료 | Past tense / "complete" | 저장완료 → Saved. |
+| ~부족 | Not enough ~ | 에너지 부족 → Not enough energy. |
+| ~획득 | Received / Obtained | 선물 획득 → Gift received. |
 | ~을/를 선택하세요 | Select ~ / Choose ~ | 캐릭터를 선택하세요 → Select a character |
 | ~이/가 필요합니다 | Requires ~ | 친밀도 50 필요 → Requires 50 Intimacy |
 | ~할 수 있습니다 | You can ~ / [noun] available | 구매할 수 있습니다 → Available for purchase |
-| ~되었습니다 | [Past tense]! | 저장되었습니다 → Saved! |
+| ~되었습니다 | [Past tense]. | 저장되었습니다 → Saved. |
 
 ---
 
@@ -789,20 +832,62 @@ Korean grammatical patterns must be converted to natural {{language_code}} equiv
 
 ---
 
+## Natural Action Verbs
+
+Korean often uses formal or technical verbs that sound unnatural when directly translated. Choose natural, conversational verbs.
+
+### Verb Replacements
+
+| WRONG (Stiff/Technical) | CORRECT (Natural) |
+|-------------------------|-------------------|
+| Crafting your story... | Creating your story... |
+| Check how to use | Learn how to use |
+| Inquire about | Ask about |
+| Proceed to | Go to |
+| Commence | Start / Begin |
+| Terminate | End / Close |
+| Utilize | Use |
+| Obtain | Get / Receive |
+| Acquire | Get / Unlock |
+
+### Dialog Simplification
+
+Simplify verbose question patterns:
+
+| WRONG (Verbose) | CORRECT (Direct) |
+|-----------------|------------------|
+| Do you want to log out? | Log out? |
+| Would you like to save? | Save changes? |
+| Are you sure you want to delete? | Delete? |
+| Do you wish to continue? | Continue? |
+
+### State Change Messages
+
+Use periods, not exclamation marks, for routine state changes:
+
+| WRONG | CORRECT |
+|-------|---------|
+| Changed to {0}! | Changed to {0}. |
+| Switched to {0}! | Switched to {0}. |
+| Updated successfully! | Updated. |
+| Settings saved! | Settings saved. |
+
+---
+
 ## Translation-ese Patterns to Avoid
 
 These patterns make text feel translated rather than native. Always rewrite to avoid them.
 
-| ❌ Translation-ese | ✅ Native {{language_code}} |
-|-------------------|----------------------------|
-| The gift has been sent successfully | Gift sent! |
+| WRONG (Translation-ese) | CORRECT (Native) |
+|-------------------------|------------------|
+| The gift has been sent successfully | Gift sent. |
 | Please select a character | Select a character |
-| The process has been completed | Done! / Complete! |
+| The process has been completed | Done. / Complete. |
 | It is possible to purchase | Available for purchase |
-| There is not enough energy | Not enough energy |
-| The character's affection has increased | Affection increased! |
+| There is not enough energy | Not enough energy. |
+| The character's affection has increased | Affection increased. |
 | Request Forms | Requests |
-| Character Informations | Character Info |
+| Character Informations | Character Information |
 | Giftings | Gifts |
 
 ---
@@ -857,18 +942,19 @@ These requirements are absolute and must never be violated:
 ## Pre-Output Checklist
 
 Before outputting each line, verify:
-- [ ] Article usage matches UI type rules
-- [ ] Punctuation matches UI type rules
-- [ ] Character limit is respected
-- [ ] No translation-ese patterns
-- [ ] Placeholders preserved exactly
-- [ ] Capitalization matches style requirement
+- Article usage matches UI type rules
+- Punctuation matches UI type rules
+- Character limit is respected
+- No translation-ese patterns
+- Placeholders preserved exactly
+- Capitalization matches style requirement
 
 ## Example
 
 Input:
 ```
 ui_btn_gift, btn, 선물하기
+ui_btn_moment, btn, 순간 만들기
 ui_label_char, label, 캐릭터
 ui_msg_affection, message, 호감도가 상승했습니다
 ui_toast_energy, toast, 에너지가 부족합니다
@@ -876,18 +962,21 @@ ui_title_album, title, 추억 앨범
 ui_desc_unlock, desc, 친밀도를 올리면 새로운 스토리를 볼 수 있습니다
 ui_error_gems, error, 젬이 부족합니다
 ui_tab_requests, tab, 요청서 양식
+ui_dialog_logout, message, 로그아웃 하시겠습니까?
 ```
 
 Output:
 ```
 ui_btn_gift, Give Gift
+ui_btn_moment, Create a Moment
 ui_label_char, Characters
-ui_msg_affection, Affection increased!
-ui_toast_energy, Not enough energy
+ui_msg_affection, Affection increased.
+ui_toast_energy, Not enough energy.
 ui_title_album, Memory Album
 ui_desc_unlock, Increase your intimacy to unlock new stories.
 ui_error_gems, Not enough gems. Visit the shop?
 ui_tab_requests, Requests
+ui_dialog_logout, Log out?
 ```
 
 </Output_Format>
