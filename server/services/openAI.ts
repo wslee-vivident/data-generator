@@ -13,6 +13,8 @@ export async function sendToOpenAI(
         apiKey : apiKey, // process.env.OPENAI_API_KEY
     });
 
+    const floatTemperature = parseFloat(temperature.toString());
+
     try {
         const response = await openai.responses.create({
             model : "gpt-5.1",
@@ -20,7 +22,7 @@ export async function sendToOpenAI(
                 { role: "system", content: systemPrompt },
                 { role : "user", content : inputText }
             ],
-            temperature : temperature,
+            temperature : floatTemperature,
             reasoning : { effort : "none" },
             max_output_tokens : 4096,
         });
