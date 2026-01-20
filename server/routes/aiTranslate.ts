@@ -89,7 +89,7 @@ async function translateOneBatch(
                     translateResult = await sendToOpenAI(inputText, prompt);
                     break;
                 case "gemini":
-                    translateResult = await sendToGemini(inputText, prompt);
+                    translateResult = await sendToGemini(inputText, prompt, 0.5, "gemini_flash");
                     break;
                 case "claude":
                     translateResult = await sendToClaude(inputText, prompt);
@@ -191,7 +191,7 @@ async function processAllGroups(
             const charPromptFile = `prompt_character_${charName}.txt`;
             console.log(charPromptFile);
             promptContent = loadPrompt(charPromptFile, defaultPromptFile);
-            generateModel = "claude";
+            generateModel = "gemini";
         }
 
         console.log(`🚀 Starting Group: [${strategyKey}] / Rows: ${rows.length}`);
