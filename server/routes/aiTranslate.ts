@@ -183,7 +183,7 @@ async function processAllGroups(
         let generateModel = "";
         if(strategyKey === 'default') {
             promptContent = loadPrompt(defaultPromptFile);
-            generateModel = "gpt";
+            generateModel = "claude";
         } else {
             // strategyKey가 'character_비앙카'라면 -> 'prompt_character_비앙카.txt' 로드 시도
             // 파일이 없으면 기본 프롬프트 사용
@@ -191,7 +191,7 @@ async function processAllGroups(
             const charPromptFile = `prompt_character_${charName}.txt`;
             console.log(charPromptFile);
             promptContent = loadPrompt(charPromptFile, defaultPromptFile);
-            generateModel = "gemini";
+            generateModel = "claude";
         }
 
         console.log(`🚀 Starting Group: [${strategyKey}] / Rows: ${rows.length}`);
