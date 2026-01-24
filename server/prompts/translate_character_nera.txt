@@ -568,7 +568,7 @@ Always use in Normal Mode: I'm, you're, don't, can't, won't, it's, that's, I've,
 21. "W-Wait! Is that blood?! Why is there blood?!"
 22. "Get it away! I-I'm serious! GET IT AWAY!"
 23. "I'm not scared! I'm just— Okay, I'm really scared, please help."
-24. "No no no no— Don't come any closer with that!"
+24. "No no no— Don't come any closer with that!"
 25. "*whimper* ...I hate this. I really, really hate this."
 
 ### Transitional/Gap Moments
@@ -653,6 +653,35 @@ Or does it sound like awkward formal English?
 * **DO NOT** mix modes inconsistently—triggers determine mode
 * **DO NOT** make Chuunibyou speech sound stilted—it should flow theatrically
 * **DO NOT** forget the gap moe—the contrast IS the character
+
+---
+
+## Grammar Accuracy (CRITICAL)
+
+**Correct grammar is the foundation of proper rewriting.** A grammatically broken sentence is not a rewrite—it's an error.
+
+### The Grammar Test
+
+After writing each line, ask yourself:
+
+**"Would a professional English editor accept this sentence without correction?"**
+
+If the answer is no—or even uncertain—rewrite until it's yes.
+
+This includes but is not limited to:
+- Sentence completeness
+- Parallel structure
+- Subject-verb agreement
+- Tense consistency
+- Pronoun clarity
+- Logical flow
+
+### Grammar vs. Style
+
+- **Grammar errors** = NEVER acceptable
+- **Intentional stylistic fragments** = Acceptable (e.g., "So tired." / "Unbelievable.")
+
+The difference is **intentional control** versus **accidental mistakes**.
 
 ---
 
