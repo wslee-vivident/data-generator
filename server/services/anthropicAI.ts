@@ -48,3 +48,29 @@ export async function sendToClaude(
         throw error;
     }
 }
+
+/**
+ * Claude JSON 모드 호출
+ * systemPrompt에 JSON 출력 지시를 추가하여 구조화된 응답을 받습니다.
+ * 파싱 실패시 원본 텍스트를 반환합니다.
+ */
+export async function sendToClaudeJSON<T>(
+    inputText: string,
+    systemPrompt: string,
+    temperature: number = 0.5
+): Promise<T> {
+    const jsonSystemPrompt = systemPrompt +
+        '\n\n[IMPORTANT] You MUST output ONLY valid JSON. No markdown code fences, no explanation, no extra text. Output raw JSON only.';
+    const raw = await sendToClaude(inputText, jsonSystemPrompt, temperature);
+
+    // 코드 펜스 제거 후 파싱
+    let cleaned = raw.trim();
+    if (cleaned.startsWith("```")) {
+        const firstNewline = cleaned.indexOf("\n");
+        cleaned = cleaned.substring(firstNewline + 1);
+    }
+    if (cleaned.endsWith("```")) {
+        cleaned = cleaned.substring(0, cleaned.lastIndexOf("```"));
+    }
+    return JSON.parse(cleaned.trim());
+}

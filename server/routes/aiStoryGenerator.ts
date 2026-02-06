@@ -2,9 +2,7 @@ import express from 'express';
 import { parseSheetToObject, loadPrompt } from '../../shared/helpUtil';
 import { StoryOrchestrator } from '../services/storyOrchestrator';
 import { getSheetData, updateSheetData } from '../services/googleSheet';
-import { BaseStoryRow, StoryResult } from '../types';
-
-type GenerationMode = 'single_line' | 'full_script';
+import { BaseStoryRow, StoryResult, GenerationMode } from '../types';
 const router = express.Router();
 
 // ==========================================

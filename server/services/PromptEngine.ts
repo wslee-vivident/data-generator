@@ -1,131 +1,46 @@
-import { BaseStoryRow } from '../types';
-import { loadPrompt } from '../../shared/helpUtil';
+import { BaseStoryRow, GenerationMode } from '../types';
+import { ContextEngine } from './ContextEngine';
+import {
+    DictionaryProvider,
+    CommonRowProvider,
+    CharacterProfileProvider,
+    ConversationHistoryProvider,
+    FullScriptProfileProvider,
+} from './contextProviders';
 
-export type GenerationMode = 'single_line' | 'full_script';
+// =================================================================
+//  PromptEngine - ContextEngine의 하위 호환 래퍼
+//  기존 코드(StoryOrchestrator, aiStoryGenerator)에서 수정 없이 사용 가능
+//  내부적으로 Context Provider 패턴을 사용합니다.
+// =================================================================
 
 export class PromptEngine {
-    private mainTemplate : string;
-    private dictionary : string;
+    private contextEngine: ContextEngine;
 
-    constructor (mainTemplateContent : string, 
-        dictionaryObj : Record<string, string>
-    ) {
-        this.mainTemplate = mainTemplateContent;
-        // 딕셔너리를 미리 줄바꿈 문자열로 변환
-        this.dictionary = Object.entries(dictionaryObj)
-            .map(([key, value]) => `${key} : ${value}`)
-            .join("\n");
+    constructor(mainTemplateContent: string, dictionaryObj: Record<string, string>) {
+        this.contextEngine = new ContextEngine(mainTemplateContent);
+
+        // 기본 Provider 등록 (기존 PromptEngine 기능과 동일한 결과)
+        this.contextEngine
+            .addProvider(new DictionaryProvider(dictionaryObj))
+            .addProvider(new CommonRowProvider())
+            .addProvider(new CharacterProfileProvider())
+            .addProvider(new ConversationHistoryProvider())
+            .addProvider(new FullScriptProfileProvider());
     }
 
-
-    //모드에 따라 적절한 컨텍스트를 준비하고 프롬프트를 생성합니다.
+    /**
+     * 프롬프트 빌드 (기존 시그니처와 동일)
+     * 내부적으로 ContextEngine에 위임합니다.
+     */
     public buildPrompt(row: BaseStoryRow, history: string[], mode: GenerationMode): string {
-
-        const commonReplacements : Record<string, string> = {
-            "{{oshiz_dictionary}}" : this.dictionary,
-            "{{char}}" : String(row['speaker']).trim(),
-            "{{scene_id}}" : row['sceneId'] || "",
-            "{{key}}" : row['key'] || "",
-            "{{Location}}" : row['location'] || "",
-            "{{direction}}" : row['direction'] || "",
-            "{{model}}" : row['model'] || "",
-            "{{temperature}}" : row['temperature'] !== undefined ? String(row['temperature']) : "",
-        };
-
-        let specificReplacements : Record<string, string> = {};
-
-        if(mode === 'single_line') {
-            specificReplacements = this.prepareSingleLineContext(row, history);
-        } else if (mode === 'full_script') {
-            specificReplacements = this.prepareFullStoryContext(row, history);
-        }
-
-        //데이터 병합
-        const finalReplacements = { ...commonReplacements, ...specificReplacements };
-        
-
-        // 3. Inner Thought 처리
-        let innerThoughtText = "None";
-        if(row.innerThought) {
-            if(typeof row.innerThought === 'object' && Object.keys(row.innerThought).length > 0) {
-                // ✅ JSON.stringify를 쓰되, 읽기 좋게 들여쓰기(2칸)를 줍니다.
-                innerThoughtText = JSON.stringify(row.innerThought, null, 2);
-            } else if (typeof row.innerThought === 'string' && row.innerThought.trim() !== "") {
-                innerThoughtText = row.innerThought;
-            }
-            finalReplacements["{{innerThought}}"] = innerThoughtText;
-        }
-
-        // 5. 템플릿 치환 실행
-        let finalPrompt = this.mainTemplate;
-        for (const [key, value] of Object.entries(finalReplacements)) {
-            const regex = new RegExp(key, "g");
-            finalPrompt = finalPrompt.replace(regex, value || "");
-        }
-
-        return finalPrompt;
+        return this.contextEngine.buildPrompt(row, history, mode);
     }
 
-    // =================================================================
-    //  Private Helper Methods (Context Providers)
-    // =================================================================
-
-    private prepareSingleLineContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
-        const speakerName = String(row['speaker'] || "").trim();
-        const level = String(row['level'] || "").trim();
-        const MAX_HISTORY_LINES = 20;
-        const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
-
-        let charFileName = "";
-        if(String(level).trim() !== "" && level !== null && level !== undefined) {
-            charFileName = `story_character_${speakerName}_${level}.txt`;
-        } else if (String(speakerName) === "player") {
-            charFileName = `story_character_player.txt`;
-        } else if (String(speakerName) === "narration") {
-            charFileName = `story_character_narration.txt`;
-        } else  {
-            charFileName = `Name: ${speakerName}`;
-        }
-        // 3. 파일 로드 시도
-        const content = loadPrompt(charFileName);
-
-
-        return {
-            "{{speaker}}" : content || `Name: ${speakerName}`,
-            "{{conversation_history}}" : recentHistory || "(대화 시작)",
-            "{{emotion}}" : row['emotion'] || "",
-            "{{introContext}}" : row['introContext'] || "",
-            "{{narrationTone}}" : row['narrationTone'] || "",
-            "{{writingStyle}}" : row['writingStyle'] || ""
-        }
-    }
-
-    private prepareFullStoryContext(row : BaseStoryRow, history : string[]) : Record<string, string> {
-        const charName = String(row['character'] || "").trim();
-        const level = String(row['level'] || "");
-
-        let heroineProfile = "";
-        if(charName) {
-            heroineProfile = loadPrompt(`story_character_${charName}_${level}.txt`);
-        }
-
-        const playerProfile = loadPrompt(`story_character_player.txt`);
-        const systemKind = String(row['systemKind'] || "").trim();
-        let systemPrompt = "";
-        if(systemKind) {
-            systemPrompt = loadPrompt(`story_system_${systemKind}.txt`);
-        }
-
-        const MAX_HISTORY_LINES = 15;
-        const recentHistory = history.slice(-MAX_HISTORY_LINES).join("\n");
-
-        return {
-            "{{player_info}}" : playerProfile,
-            "{{character_info}}" : heroineProfile,
-            "{{place}}" : row['place'] || "",
-            "{{systemKind}}" : systemPrompt,
-            "{{script_history}}" : recentHistory || "(대화 시작)",
-        }
+    /**
+     * 내부 ContextEngine 접근 (새 Provider 추가시 사용)
+     */
+    public getContextEngine(): ContextEngine {
+        return this.contextEngine;
     }
 }
-

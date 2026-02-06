@@ -1,12 +1,12 @@
-import { BaseStoryRow, StoryResult } from "../types";
+import { BaseStoryRow, StoryResult, GenerationMode, LLMModelName } from "../types";
 import { PromptEngine } from "./PromptEngine";
-import { sendToOpenAI } from "./openAI";
-import { sendToGemini } from "./googleGemini";
-import { sendToClaude } from "./anthropicAI";
-import { send } from "process";
+import { sendToLLM } from "./llmRouter";
+import { parseSingleLineText, parseFullScriptPSV } from "./outputParsers";
 
-type GenerationMode = 'single_line' | 'full_script';
-const nunjucks = require("nunjucks");
+// =================================================================
+//  StoryOrchestrator - 스토리 생성 오케스트레이터
+//  역할: 순서 지휘만 담당 (프롬프트 조립, LLM 호출, 파싱은 외부 모듈에 위임)
+// =================================================================
 
 export class StoryOrchestrator {
     private rows: BaseStoryRow[];
@@ -15,8 +15,8 @@ export class StoryOrchestrator {
     private mode: GenerationMode;
 
     constructor(
-        rows: BaseStoryRow[], 
-        mainTemplate: string, 
+        rows: BaseStoryRow[],
+        mainTemplate: string,
         dictionary: any,
         mode: GenerationMode = 'single_line'
     ) {
@@ -27,145 +27,61 @@ export class StoryOrchestrator {
 
     public async generateAll(): Promise<StoryResult[]> {
         const results: StoryResult[] = [];
-        
+
         for (const row of this.rows) {
             try {
-                // 1. 프롬프트 생성
-                let prompt = this.promptEngine.buildPrompt(row, this.history, this.mode);
+                // 1. 프롬프트 생성 (PromptEngine → ContextEngine → Providers)
+                const prompt = this.promptEngine.buildPrompt(row, this.history, this.mode);
                 const temperature = row.temperature !== undefined ? row.temperature : 0.5;
-                let inputText = "";
-                if(this.mode === 'single_line') {
-                    inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`
-                } else if (this.mode === 'full_script') {
-                    inputText = `you are a story writer who is an expert of Visual Novel style game in scenario. \n
-                    ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
-                    const systemMode = row.systemKind || "story";
-                    const character = row.speaker || "Player";
-                    const data = {
-                        systemMode : systemMode,
-                        character : character
-                    };
-                    prompt = nunjucks.renderString(prompt, data);
-                }
-                
-                // 2. 모델 호출
-                // row.model이 있으면 사용, 없으면 기본값
-                const modelName = row.model?.toLowerCase() || "gemini";
-                let rawOutput = "";
+                const inputText = this.buildInputText(row);
 
-                switch(modelName) {
-                    case "gpt":
-                        rawOutput = await sendToOpenAI(inputText, prompt, temperature);
-                        break;
-                    case "claude":
-                        rawOutput = await sendToClaude(inputText, prompt, temperature);
-                        break;
-                    case "gemini_pro" :
-                    case "gemini_flash" :
-                        rawOutput = await sendToGemini(inputText, prompt, temperature, modelName);
-                        break;
-                    default:
-                        throw new Error(`Unsupported model: ${modelName}`);
-                }
-                
+                // 2. 모델 호출 (LLM 통합 라우터)
+                const modelName = (row.model?.toLowerCase() || "gemini_flash") as LLMModelName;
+                const llmResponse = await sendToLLM({
+                    model: modelName,
+                    inputText,
+                    systemPrompt: prompt,
+                    temperature,
+                });
+                const rawOutput = llmResponse.text;
 
-                // 3. 모드에 따른 결과 파싱 (핵심)
+                // 3. 모드에 따른 결과 파싱 (outputParsers 모듈에 위임)
                 if (this.mode === 'full_script') {
-                    // [Full Script 모드]
-                    // LLM이 여러 줄의 CSV를 뱉음 -> 파싱해서 여러 개의 Result로 변환
                     const sceneId = row['sceneId'] || "unknown_scene";
-                    const parsedLines = this.parseFullScriptCSV(rawOutput, sceneId);
+                    const parsedLines = parseFullScriptPSV(rawOutput, sceneId);
                     results.push(...parsedLines);
-                    
-                    // 히스토리에 전체 대화 내용을 요약해서 넣거나, 마지막 대사를 넣음
+
+                    // 히스토리 업데이트
                     const historyLines = parsedLines.map(line => `${line['speaker']} : ${line['text']}`);
                     this.history.push(...historyLines);
-                    
+
                 } else {
-                    // [Single Line 모드] (기존 방식)
-                    const cleanText = this.parseSingleLine(rawOutput, row['key']);
-                    results.push({ 
-                        key: row['key'], 
-                        result: cleanText 
+                    const cleanText = parseSingleLineText(rawOutput, row['key']);
+                    results.push({
+                        key: row['key'],
+                        result: cleanText
                     });
                     this.history.push(`${row['speaker']}: ${cleanText}`);
                 }
 
             } catch (error) {
-                console.error(`Error processing row:`, error);
+                console.error(`❌ Row 처리 오류:`, error);
             }
         }
         return results;
     }
 
-    // 기존 방식 파서
-    private parseSingleLine(text: any, key: string): string {
-        // 1. 입력값 검증: 문자열이 아니면 강제로 변환하거나 빈 문자열 처리
-        if (!text) return "";
-        
-        const safeText = typeof text === 'string' ? text : String(text);
-
-        const parts = safeText.split(",");
-        if (parts.length >= 2) {
-            // 첫 번째 쉼표 이후의 모든 텍스트를 합침 (대사에 쉼표 포함 가능성)
-            return parts.slice(1).join(",").trim();
+    /**
+     * 모드에 따른 inputText 구성
+     * system prompt(PromptEngine 결과)와 별도로, user 메시지를 만듭니다.
+     */
+    private buildInputText(row: BaseStoryRow): string {
+        if (this.mode === 'single_line') {
+            return `you are a story writer who is an expert of Visual Novel style game in scenario. your story is starting from ${row.introContext}`;
+        } else if (this.mode === 'full_script') {
+            return `you are a story writer who is an expert of Visual Novel style game in scenario. \n
+                    ${this.history.join("\n")}\n Now, generate the next part of the story based on the prompt.`;
         }
-        return text.replace(key, "").trim();
-    }
-
-    // 신규 방식 파서 (Full Script) - 안전 장치 및 컬럼 매핑 강화
-    private parseFullScriptCSV(text: any, inputSceneId:string): StoryResult[] {
-        // 1. 입력값 안전 검증
-        if (!text) {
-            console.warn("⚠️ parseFullScriptCSV received empty input.");
-            return [];
-        }
-
-        let rawString = "";
-        
-        // LLM이 JSON 객체로 반환했을 경우 처리
-        if (typeof text === 'object') {
-            rawString = text.content || text.result || JSON.stringify(text);
-        } else {
-            rawString = String(text);
-        }
-
-        // 2. 줄바꿈으로 분리
-        const lines = rawString.split("\n").filter(line => line.trim() !== "");
-        
-        return lines.map(line => {
-            // [중요] 구분자를 파이프(|)로 변경하여 쉼표 대사 문제 해결
-            const parts = line.split("|").map(p => p.trim());
-            
-            // 데이터가 충분하지 않으면 스킵 (빈 줄 방지)
-            // 프롬프트에서 항상 7개 컬럼을 요구했으므로 최소 5개 이상 확인
-            if (parts.length < 5) return null;
-
-            // 포맷:  id | speaker | emotion | text | choice_grade | reply_text
-            // 배열 구조 분해 할당
-            const [id, speaker, emotion, textContent, choiceGrade, replyText] = parts;
-
-            // Key 생성: SceneId_001 형태
-            // id가 숫자인지 확인 후 패딩 처리
-            const safeId = isNaN(Number(id)) ? id : String(id).padStart(3, '0');
-            const uniqueKey = `${inputSceneId}_${safeId}`;
-            
-            // 3. 반환 데이터 구성 
-            // 시트 헤더 이름과 정확히 일치하는 키값으로 객체를 만들어야 updateSheetData에서 자동 매핑됨
-            return {
-                // 시스템 식별용
-                sceneId: inputSceneId,
-                      
-                // 시트 컬럼 매핑용
-                key: uniqueKey,
-                speaker: speaker,
-                emotion: emotion,
-                text: textContent,              // 시트 헤더: text
-                choice_grade: choiceGrade || "", // 시트 헤더: choice_grade (없으면 빈값)
-                reply_text: replyText || ""     // 시트 헤더: reply_text (없으면 빈값)
-                
-            } as any; 
-
-        }).filter((item): item is StoryResult => item !== null);
+        return "";
     }
 }

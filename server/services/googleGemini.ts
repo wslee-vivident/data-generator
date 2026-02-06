@@ -60,3 +60,67 @@ export async function sendToGemini(
         throw error;
     }
 }
+
+/**
+ * Gemini JSON 모드 호출
+ * responseMimeType을 사용하여 구조화된 JSON 응답을 받습니다.
+ */
+export async function sendToGeminiJSON<T>(
+    inputText: string,
+    systemPrompt: string,
+    temperature: number = 0.5,
+    modelSelect: string = "gemini_flash"
+): Promise<T> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('Gemini API key is not set in environment variables.');
+
+    const genAI = new GoogleGenAI({ apiKey });
+
+    let model = "";
+    if (modelSelect === "gemini_pro") {
+        model = "gemini-3-pro-preview";
+    } else {
+        model = "gemini-3-flash-preview";
+    }
+
+    const config: any = {
+        temperature: temperature,
+        systemInstruction: {
+            parts: [{ text: systemPrompt }]
+        },
+        // JSON 출력 모드 활성화
+        responseMimeType: "application/json",
+    };
+
+    // Flash 모델은 thinking 설정 추가
+    if (modelSelect === "gemini_flash") {
+        config.thinkingConfig = {
+            thinkingLevel: ThinkingLevel.MINIMAL,
+            includeThoughts: false
+        };
+    }
+
+    try {
+        const result = await genAI.models.generateContent({
+            model: model,
+            config: config,
+            contents: [
+                {
+                    role: "user",
+                    parts: [{ text: inputText }]
+                }
+            ]
+        });
+
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+            throw new Error('No text returned from Gemini (JSON mode).');
+        }
+
+        return JSON.parse(text.trim());
+
+    } catch (error) {
+        console.error('Error communicating with Gemini (JSON mode):', error);
+        throw error;
+    }
+}

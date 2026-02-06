@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /c/Users/unpond/.claude-worktrees/data-generator/dazzling-tesla log --oneline -20)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

@@ -1,10 +1,8 @@
 import express from 'express';
-import { sendToOpenAI } from "../services/openAI";
-import { sendToGemini } from "../services/googleGemini";
-import { sendToClaude } from "../services/anthropicAI";
-import { getSheetData, updateSheetData } from '../services/googleSheet';   
-import fs from "fs";
-import path from "path";
+import { getSheetData, updateSheetData } from '../services/googleSheet';
+import { loadPrompt, parseSheetToObject } from '../../shared/helpUtil';
+import { sendToLLM } from '../services/llmRouter';
+import { LLMModelName } from '../types';
 
 const router = express.Router();
 
@@ -34,7 +32,7 @@ router.post("/batch-group-translate", async (req, res) => {
         console.log(`targetSheet : ${sheetName} \n FileId : ${sheetId}`);
         
         //parse sheet values to Objects
-        const objectData = parseSheetDataToObjects(data);
+        const objectData = parseSheetToObject(data);
 
         //Step.1 data grouping
         const groupedData = groupDataByStrategy(objectData);
@@ -83,20 +81,14 @@ async function translateOneBatch(
             
             const prompt = systemPrompt.replaceAll("{{language_code}}", lang);
             
-            let translateResult = "";
-            switch(model) {
-                case "gpt":
-                    translateResult = await sendToOpenAI(inputText, prompt);
-                    break;
-                case "gemini":
-                    translateResult = await sendToGemini(inputText, prompt, 0.5, "gemini_flash");
-                    break;
-                case "claude":
-                    translateResult = await sendToClaude(inputText, prompt);
-                    break;
-                default:
-                    throw new Error(`Unsupported model type: ${model}`);
-            }
+            // LLM 통합 라우터로 호출
+            const llmResponse = await sendToLLM({
+                model: model as LLMModelName,
+                inputText,
+                systemPrompt: prompt,
+                temperature: 0.5,
+            });
+            const translateResult = llmResponse.text;
             perLang[lang] = parseTranslationTextToMap(translateResult);
         })
     );
@@ -123,24 +115,6 @@ function parseTranslationTextToMap(text : string) :Record<string, string> {
     }
 
     return map;
-}
-
-export function parseSheetDataToObjects(data : any[][]) : Record<string, any>[] {
-    if(!Array.isArray(data) || data.length === 0) {
-        return [];
-    }
-
-    const headers = data[0].map( h => String(h).trim());
-
-    const rows = data.slice(1);
-
-    return rows.map(row => {
-        const obj : Record<string, any> = {};
-        headers.forEach( (header, index) => {
-            obj[header] = row[index] ?? "";
-        });
-        return obj;
-    });
 }
 
 function groupDataByStrategy(dataObj : Record<string, any>[]) {
@@ -268,26 +242,6 @@ function mergeTranslationsInMemory(
     }
 
     return Array.from(rowMap.values());
-}
-
-function loadPrompt(fileName : string, fallbackFileName? : string) : string {
-    try {
-        const filePath = path.resolve(process.cwd(), "prompts", fileName);
-        if(fs.existsSync(filePath)) {
-            return fs.readFileSync(filePath, 'utf8');
-        }
-    } catch (e) { /* ignore */ }
-
-    if(fallbackFileName) {
-        try {
-            const fallbackPath = path.resolve(process.cwd(), "prompts", fallbackFileName);
-            return fs.readFileSync(fallbackPath, 'utf8');
-        } catch (e) { 
-            console.error('Prompt file not found:', fallbackFileName);
-        }
-    }
-
-    return ""
 }
 
 export default router;
