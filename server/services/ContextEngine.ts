@@ -29,13 +29,11 @@ export class ContextEngine {
     }
 
     /**
-     * 프롬프트 빌드
-     * 1. 등록된 Provider들에게서 canProvide() 체크 후 변수 수집
-     * 2. 모든 변수를 병합
-     * 3. nunjucks로 템플릿 렌더링
+     * 컨텍스트 변수만 수집 (렌더링 없이)
+     * DAG 파이프라인에서 ContextNode가 사용합니다.
+     * 변수 수집과 템플릿 렌더링을 분리하여 각 단계를 독립적으로 제어할 수 있습니다.
      */
-    buildPrompt(row: BaseStoryRow, history: string[], mode: GenerationMode): string {
-        // 모든 Provider에게서 컨텍스트 변수 수집
+    collectVariables(row: BaseStoryRow, history: string[], mode: GenerationMode): Record<string, string> {
         const templateVars: Record<string, string> = {};
 
         for (const provider of this.providers) {
@@ -44,6 +42,18 @@ export class ContextEngine {
                 Object.assign(templateVars, provided);
             }
         }
+
+        return templateVars;
+    }
+
+    /**
+     * 프롬프트 빌드
+     * 1. 등록된 Provider들에게서 canProvide() 체크 후 변수 수집
+     * 2. 모든 변수를 병합
+     * 3. nunjucks로 템플릿 렌더링
+     */
+    buildPrompt(row: BaseStoryRow, history: string[], mode: GenerationMode): string {
+        const templateVars = this.collectVariables(row, history, mode);
 
         // nunjucks 렌더링 ({{variable}}과 {% if %} 블록 모두 처리)
         return nunjucks.renderString(this.mainTemplate, templateVars);

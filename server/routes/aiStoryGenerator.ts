@@ -1,6 +1,7 @@
 import express from 'express';
 import { parseSheetToObject, loadPrompt } from '../../shared/helpUtil';
 import { StoryOrchestrator } from '../services/storyOrchestrator';
+import { DAGOrchestrator } from '../services/dag';
 import { getSheetData, updateSheetData } from '../services/googleSheet';
 import { BaseStoryRow, StoryResult, GenerationMode } from '../types';
 const router = express.Router();
@@ -47,11 +48,16 @@ async function handleStoryGeneration(req: express.Request, res: express.Response
         // 3. Scene핑
         const groupedRows = groupRowsBySceneId(storyRows, mode);
         
-        // 4. 병렬 처리 실행
+        // 4. 병렬 처리 실행 (DAG 기반 오케스트레이터)
         const tasks = Object.entries(groupedRows).map(async ([sceneId, rows]) => {
             console.log(`🚀 Scene: ${sceneId} (${rows.length} rows)`);
-            const orchestrator = new StoryOrchestrator(rows, mainTemplate, dictionary, mode);
-            
+            const orchestrator = new DAGOrchestrator({
+                rows,
+                mainTemplate,
+                dictionary,
+                mode,
+            });
+
             return await orchestrator.generateAll();
         });
 
