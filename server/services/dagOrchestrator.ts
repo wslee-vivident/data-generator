@@ -1,16 +1,15 @@
-import { BaseStoryRow, GenerationMode, StoryResult } from '../../types';
-import { ContextEngine } from '../ContextEngine';
+import { BaseStoryRow, GenerationMode, StoryResult, PipelineContext } from '../types';
+import { ContextEngine } from './ContextEngine';
 import {
     DictionaryProvider,
     CommonRowProvider,
     CharacterProfileProvider,
     ConversationHistoryProvider,
     FullScriptProfileProvider,
-} from '../contextProviders';
-import { DAGGraph } from './DAGGraph';
-import { PipelineContext } from './types';
-import { DefaultLLMAdapter, ILLMAdapter } from './LLMAdapter';
-import { ResultAggregator, IResultAggregator } from './ResultAggregator';
+} from './contextProviders';
+import { DAGGraph } from './dagGraph';
+import { DefaultLLMAdapter, ILLMAdapter } from './llmAdapter';
+import { ResultAggregator, IResultAggregator } from './resultAggregator';
 import {
     ContextNode,
     PromptNode,
@@ -18,7 +17,7 @@ import {
     LLMNode,
     ParseNode,
     ParserType,
-} from './pipelineNodes';
+} from './dagPipelineNodes';
 
 // =================================================================
 //  DAGOrchestrator - DAG 기반 오케스트레이터
@@ -145,10 +144,6 @@ export class DAGOrchestrator {
      *   ContextNode ──→ PromptNode ───┐
      *       │                          ├──→ LLMNode ──→ ParseNode
      *       └──→ InputBuildNode ──────┘
-     *
-     * ContextNode와 InputBuildNode는 PromptNode 이후 LLMNode에서 합류합니다.
-     * PromptNode와 InputBuildNode는 각각 ContextNode에 의존하지만 서로 독립적이므로
-     * 병렬 실행이 가능합니다.
      */
     static defaultGraphFactory(
         engine: ContextEngine,

@@ -1,17 +1,10 @@
-import { LLMRequest, LLMResponse, sendToLLM, sendToLLMJSON } from '../llmRouter';
+import { LLMRequest, LLMResponse, sendToLLM, sendToLLMJSON } from './llmRouter';
 
 // =================================================================
 //  LLM 어댑터 인터페이스 및 기본 구현
 //
 //  기존 llmRouter의 함수들을 어댑터 패턴으로 래핑합니다.
 //  테스트, Mock, 또는 커스텀 LLM 연동 시 ILLMAdapter를 구현하면 됩니다.
-//
-//  사용 예시:
-//    const adapter = new DefaultLLMAdapter();
-//    const response = await adapter.send({ model: 'claude', ... });
-//
-//  커스텀 어댑터:
-//    class CachedLLMAdapter implements ILLMAdapter { ... }
 // =================================================================
 
 /** LLM 어댑터 인터페이스 */

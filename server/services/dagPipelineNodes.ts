@@ -1,13 +1,12 @@
-import { IPipelineNode, PipelineContext } from './types';
-import { ContextEngine } from '../ContextEngine';
-import { ILLMAdapter } from './LLMAdapter';
-import { LLMModelName } from '../../types';
+import { IPipelineNode, PipelineContext, LLMModelName } from '../types';
+import { ContextEngine } from './ContextEngine';
+import { ILLMAdapter } from './llmAdapter';
 import {
     parseSingleLineText,
     parseFullScriptPSV,
     parseSingleLineJSON,
     parseFullScriptJSON,
-} from '../outputParsers';
+} from './outputParsers';
 const nunjucks = require('nunjucks');
 
 // =================================================================
@@ -152,31 +151,3 @@ export class ParseNode implements IPipelineNode {
         }
     }
 }
-
-// =================================================================
-//  커스텀 노드 예시 (확장 가이드)
-// =================================================================
-
-/**
- * 커스텀 노드 작성법:
- *
- * 1. IPipelineNode 인터페이스를 구현합니다.
- * 2. 고유한 id를 부여합니다 (DAG 내에서 유일해야 함).
- * 3. execute()에서 PipelineContext의 필요한 필드를 읽고/씁니다.
- * 4. DAGGraph에 addNode()로 등록하고 의존성을 지정합니다.
- *
- * 예시: 번역 후처리 노드
- *   export class TranslationPostProcessNode implements IPipelineNode {
- *       readonly id = 'translate-post';
- *       readonly name = '번역 후처리';
- *       async execute(ctx: PipelineContext): Promise<void> {
- *           ctx.results = ctx.results.map(r => ({
- *               ...r,
- *               result: r.result.replace(/\n+/g, ' ').trim(),
- *           }));
- *       }
- *   }
- *
- * 등록:
- *   graph.addNode(new TranslationPostProcessNode(), ['parse']);
- */

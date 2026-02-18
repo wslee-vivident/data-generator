@@ -1,7 +1,7 @@
 import express from 'express';
 import { parseSheetToObject, loadPrompt } from '../../shared/helpUtil';
 import { StoryOrchestrator } from '../services/storyOrchestrator';
-import { DAGOrchestrator } from '../services/dag';
+import { DAGOrchestrator } from '../services/dagOrchestrator';
 import { getSheetData, updateSheetData } from '../services/googleSheet';
 import { BaseStoryRow, StoryResult, GenerationMode } from '../types';
 const router = express.Router();

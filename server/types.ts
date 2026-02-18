@@ -75,3 +75,63 @@ export interface OrchestratorConfig {
     dictionary: Record<string, string>;
     mode: GenerationMode;
 }
+
+// =================================================================
+//  DAG 파이프라인 타입 정의
+// =================================================================
+
+/** 노드 실행 상태 */
+export type NodeStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
+/**
+ * 파이프라인 컨텍스트
+ * DAG 실행 중 노드 간 데이터를 공유하는 객체.
+ *
+ * 흐름: ContextNode → templateVars
+ *       PromptNode → systemPrompt
+ *       InputBuildNode → inputText
+ *       LLMNode → llmRawOutput
+ *       ParseNode → results
+ */
+export interface PipelineContext {
+    readonly row: BaseStoryRow;
+    readonly mode: GenerationMode;
+    readonly template: string;
+    readonly dictionary: Record<string, string>;
+    history: string[];
+    templateVars: Record<string, string>;
+    systemPrompt: string;
+    inputText: string;
+    llmRawOutput: string;
+    results: StoryResult[];
+    metadata: Record<string, any>;
+}
+
+/**
+ * 파이프라인 노드 인터페이스
+ * DAG의 각 단계를 나타내는 실행 단위.
+ */
+export interface IPipelineNode {
+    readonly id: string;
+    readonly name: string;
+    execute(ctx: PipelineContext): Promise<void>;
+}
+
+/** DAG 노드 상태 래퍼 (실행 추적용) */
+export interface DAGNodeState {
+    node: IPipelineNode;
+    status: NodeStatus;
+    dependencies: string[];
+    error?: Error;
+    startedAt?: number;
+    completedAt?: number;
+}
+
+/** DAG 실행 결과 */
+export interface DAGExecutionResult {
+    success: boolean;
+    context: PipelineContext;
+    nodeStates: Map<string, DAGNodeState>;
+    errors: Array<{ nodeId: string; error: Error }>;
+    durationMs: number;
+}

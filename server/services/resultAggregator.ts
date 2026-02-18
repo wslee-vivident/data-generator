@@ -1,4 +1,4 @@
-import { StoryResult } from '../../types';
+import { StoryResult } from '../types';
 
 // =================================================================
 //  ResultAggregator - 결과 집계기

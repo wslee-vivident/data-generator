@@ -1,4 +1,4 @@
-import { IPipelineNode, DAGNodeState, DAGExecutionResult, PipelineContext } from './types';
+import { IPipelineNode, DAGNodeState, DAGExecutionResult, PipelineContext } from '../types';
 
 // =================================================================
 //  DAGGraph - DAG 기반 실행 엔진
@@ -106,7 +106,6 @@ export class DAGGraph {
             const ready = this.findReadyNodes(completed, failed);
 
             if (ready.length === 0) {
-                // 실행 가능한 노드가 없으면 나머지를 스킵 처리
                 this.markRemainingAsSkipped(completed, failed);
                 break;
             }
@@ -116,7 +115,6 @@ export class DAGGraph {
                 ready.map(state => this.executeNode(state, ctx))
             );
 
-            // 실행 결과 수집
             results.forEach((result, index) => {
                 const state = ready[index];
                 if (result.status === 'fulfilled') {
@@ -130,7 +128,6 @@ export class DAGGraph {
                 }
             });
 
-            // 실패 노드가 있으면 의존 노드들을 스킵 처리 후 다음 라운드에서 처리
             if (failed.size > 0) {
                 this.markRemainingAsSkipped(completed, failed);
                 break;
@@ -146,11 +143,7 @@ export class DAGGraph {
         };
     }
 
-    /**
-     * 의존성이 충족된 실행 가능 노드 탐색
-     * - 의존 노드가 모두 완료된 pending 노드를 찾음
-     * - 의존 노드 중 하나라도 실패하면 해당 노드는 스킵 처리
-     */
+    /** 의존성이 충족된 실행 가능 노드 탐색 */
     private findReadyNodes(completed: Set<string>, failed: Set<string>): DAGNodeState[] {
         const ready: DAGNodeState[] = [];
 

@@ -63,18 +63,17 @@ Route Handler
 
 | 파일 | 역할 |
 |------|------|
-| `server/services/dag/types.ts` | DAG 핵심 타입 (`PipelineContext`, `IPipelineNode`, `DAGNodeState`, `DAGExecutionResult`) |
-| `server/services/dag/DAGGraph.ts` | DAG 그래프 구조 및 실행 엔진. 토폴로지 정렬, 병렬 실행, 순환 참조 탐지 |
-| `server/services/dag/LLMAdapter.ts` | LLM 어댑터 인터페이스(`ILLMAdapter`) 및 구현(`DefaultLLMAdapter`, `LoggingLLMAdapter`) |
-| `server/services/dag/ResultAggregator.ts` | 결과 집계기(`IResultAggregator`, `ResultAggregator`, `DeduplicatingAggregator`) |
-| `server/services/dag/pipelineNodes.ts` | 5개 파이프라인 노드 구현(`ContextNode`, `PromptNode`, `InputBuildNode`, `LLMNode`, `ParseNode`) |
-| `server/services/dag/DAGOrchestrator.ts` | DAG 기반 오케스트레이터. 기존 `StoryOrchestrator`와 동일한 외부 API |
-| `server/services/dag/index.ts` | 모듈 공개 API re-export |
+| `server/services/dagGraph.ts` | DAG 그래프 구조 및 실행 엔진. 토폴로지 정렬, 병렬 실행, 순환 참조 탐지 |
+| `server/services/dagOrchestrator.ts` | DAG 기반 오케스트레이터. 기존 `StoryOrchestrator`와 동일한 외부 API |
+| `server/services/dagPipelineNodes.ts` | 5개 파이프라인 노드 구현(`ContextNode`, `PromptNode`, `InputBuildNode`, `LLMNode`, `ParseNode`) |
+| `server/services/llmAdapter.ts` | LLM 어댑터 인터페이스(`ILLMAdapter`) 및 구현(`DefaultLLMAdapter`, `LoggingLLMAdapter`) |
+| `server/services/resultAggregator.ts` | 결과 집계기(`IResultAggregator`, `ResultAggregator`, `DeduplicatingAggregator`) |
 
 ### 3.2 수정된 파일
 
 | 파일 | 변경 내용 |
 |------|----------|
+| `server/types.ts` | DAG 파이프라인 타입 추가 (`PipelineContext`, `IPipelineNode`, `DAGNodeState`, `DAGExecutionResult`, `NodeStatus`) |
 | `server/services/ContextEngine.ts` | `collectVariables()` 메서드 추가. 변수 수집과 렌더링 분리. `buildPrompt()`는 내부적으로 `collectVariables()`를 호출하도록 리팩터링 |
 | `server/routes/aiStoryGenerator.ts` | `DAGOrchestrator` import 추가, 핸들러에서 `StoryOrchestrator` → `DAGOrchestrator` 교체 |
 
@@ -153,7 +152,7 @@ new DAGOrchestrator({
 ### 5.1 커스텀 파이프라인 노드 추가
 
 ```typescript
-import { IPipelineNode, PipelineContext } from './dag/types';
+import { IPipelineNode, PipelineContext } from '../types';
 
 export class ValidationNode implements IPipelineNode {
     readonly id = 'validation';
@@ -258,8 +257,8 @@ engine.addProvider(new EmotionContextProvider(['happy', 'sad', 'angry']));
 | **에러 복구** | DAG 실행 중 한 row 실패 시 해당 row만 건너뛰지만, 히스토리 연속성이 깨질 수 있음 | 중 | `DAGOrchestrator.ts:generateAll()` |
 | **메모리** | 대규모 배치에서 `ResultAggregator`가 모든 결과를 메모리에 보유 | 하 | `ResultAggregator.ts` |
 | **순환 참조 탐지** | DAG 검증은 실행 시점에만 수행되며, 그래프 구성 시점에는 검증하지 않음 | 하 | `DAGGraph.ts:execute()` |
-| **PipelineContext 가변성** | 공유 컨텍스트 객체가 가변이므로 병렬 노드 간 경쟁 조건 가능성 (현재 기본 파이프라인에서는 발생하지 않으나 커스텀 그래프에서 주의 필요) | 중 | `dag/types.ts:PipelineContext` |
-| **프롬프트 인젝션** | 사용자 입력(`introContext`, `speaker` 등)이 프롬프트 템플릿에 직접 삽입됨 | 중 | `pipelineNodes.ts:InputBuildNode` |
+| **PipelineContext 가변성** | 공유 컨텍스트 객체가 가변이므로 병렬 노드 간 경쟁 조건 가능성 (현재 기본 파이프라인에서는 발생하지 않으나 커스텀 그래프에서 주의 필요) | 중 | `types.ts:PipelineContext` |
+| **프롬프트 인젝션** | 사용자 입력(`introContext`, `speaker` 등)이 프롬프트 템플릿에 직접 삽입됨 | 중 | `dagPipelineNodes.ts:InputBuildNode` |
 
 ### 6.2 기존 코드의 잠재적 이슈
 
@@ -267,7 +266,7 @@ engine.addProvider(new EmotionContextProvider(['happy', 'sad', 'angry']));
 |------|------|------|
 | `mainTemplate.replace()` 반환값 미사용 | `String.replace()`는 새 문자열을 반환하지만 결과를 할당하지 않음 (`const`이므로 재할당 불가) | `aiStoryGenerator.ts:44` |
 | `as any` 타입 캐스팅 다수 | `parseFullScriptPSV`와 `parseFullScriptJSON`에서 `as any` 캐스팅이 타입 안전성을 저해 | `outputParsers.ts:73,137` |
-| 하드코딩된 기본 모델 | `gemini_flash`가 여러 곳에 하드코딩 | `storyOrchestrator.ts:39`, `pipelineNodes.ts:LLMNode` |
+| 하드코딩된 기본 모델 | `gemini_flash`가 여러 곳에 하드코딩 | `storyOrchestrator.ts:39`, `dagPipelineNodes.ts:LLMNode` |
 
 ### 6.3 향후 개선 제안
 
@@ -283,15 +282,13 @@ engine.addProvider(new EmotionContextProvider(['happy', 'sad', 'angry']));
 
 ```
 server/
+├── types.ts                          # [수정] DAG 타입 통합
 ├── services/
-│   ├── dag/                          # [신규] DAG 파이프라인 모듈
-│   │   ├── index.ts                  # 공개 API re-export
-│   │   ├── types.ts                  # 핵심 타입 정의
-│   │   ├── DAGGraph.ts               # DAG 그래프 + 실행 엔진
-│   │   ├── DAGOrchestrator.ts        # DAG 기반 오케스트레이터
-│   │   ├── LLMAdapter.ts             # LLM 어댑터
-│   │   ├── ResultAggregator.ts       # 결과 집계기
-│   │   └── pipelineNodes.ts          # 파이프라인 노드 구현체
+│   ├── dagGraph.ts                   # [신규] DAG 그래프 + 실행 엔진
+│   ├── dagOrchestrator.ts            # [신규] DAG 기반 오케스트레이터
+│   ├── dagPipelineNodes.ts           # [신규] 파이프라인 노드 구현체
+│   ├── llmAdapter.ts                 # [신규] LLM 어댑터
+│   ├── resultAggregator.ts           # [신규] 결과 집계기
 │   ├── ContextEngine.ts              # [수정] collectVariables() 추가
 │   ├── PromptEngine.ts               # [미변경] 하위 호환 래퍼
 │   ├── storyOrchestrator.ts          # [미변경] 레거시 오케스트레이터
@@ -302,7 +299,6 @@ server/
 ├── routes/
 │   ├── aiStoryGenerator.ts           # [수정] DAGOrchestrator 사용
 │   └── ...
-└── types.ts                          # [미변경]
 ```
 
 ---
