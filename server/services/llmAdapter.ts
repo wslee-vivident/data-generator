@@ -1,5 +1,8 @@
 import { LLMRequest, LLMResponse, sendToLLM, sendToLLMJSON } from './llmRouter';
 
+// LLM 타입 재수출 (코어 모듈이 llmRouter에 직접 의존하지 않도록)
+export { LLMRequest, LLMResponse } from './llmRouter';
+
 // =================================================================
 //  LLM 어댑터 인터페이스 및 기본 구현
 //

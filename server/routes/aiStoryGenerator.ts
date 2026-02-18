@@ -1,16 +1,6 @@
 import express from 'express';
-import { GenerationMode } from '../types';
-import { DAGGraph } from '../services/dagGraph';
-import {
-    StoryRouteContext,
-    DataParseNode,
-    PromptLoadNode,
-    GroupingNode,
-    GenerationNode,
-    SheetFetchNode,
-    MergeNode,
-    SheetUpdateNode,
-} from '../services/dagStoryRouteNodes';
+import { GenerationMode, PipelineContext } from '../types';
+import { buildStoryRouteGraph, StoryInput } from '../services/storyWorkflow';
 const router = express.Router();
 
 // ==========================================
@@ -25,39 +15,13 @@ router.post("/full-story-generate", async (req, res) => {
 });
 
 // ==========================================
-// 2. 라우트 레벨 DAG 구성
+// 2. 공통 핸들러
 //
-//    DataParseNode ───┐
-//                      ├→ GroupingNode ─→ GenerationNode ──┐
-//    PromptLoadNode ──┘                                     ├→ MergeNode → SheetUpdateNode
-//                                          SheetFetchNode ──┘
-//
-//    - DataParseNode, PromptLoadNode, SheetFetchNode: 의존성 없이 병렬 실행
-//    - GroupingNode: 데이터 파싱 완료 후 실행
-//    - GenerationNode: 그룹핑 + 프롬프트 로드 완료 후 실행
-//    - MergeNode: 생성 결과 + 시트 조회 완료 후 실행
-//    - SheetUpdateNode: 병합 완료 후 실행
-// ==========================================
-function buildStoryDAG(): DAGGraph<StoryRouteContext> {
-    const graph = new DAGGraph<StoryRouteContext>();
-
-    graph
-        // 독립 노드 (병렬 실행)
-        .addNode(new DataParseNode(), [])
-        .addNode(new PromptLoadNode(), [])
-        .addNode(new SheetFetchNode(), [])
-        // 데이터 의존 노드
-        .addNode(new GroupingNode(), ['data-parse'])
-        .addNode(new GenerationNode(), ['grouping', 'prompt-load'])
-        // 결과 처리 노드
-        .addNode(new MergeNode(), ['generation', 'sheet-fetch'])
-        .addNode(new SheetUpdateNode(), ['merge']);
-
-    return graph;
-}
-
-// ==========================================
-// 3. 공통 핸들러
+//    라우트 레벨 DAG 실행:
+//    DataParse ───┐
+//                  ├→ Grouping ─→ Generation ──┐
+//    PromptLoad ──┘                             ├→ Merge → SheetUpdate
+//                                SheetFetch ───┘
 // ==========================================
 async function handleStoryGeneration(
     req: express.Request,
@@ -77,26 +41,25 @@ async function handleStoryGeneration(
             return res.status(400).json({ error: "promptFile required" });
         }
 
-        // 라우트 컨텍스트 생성
-        const ctx: StoryRouteContext = {
-            mode,
-            sheetId,
-            sheetName,
-            promptFile,
-            rawData: data,
-            dictionary: dictionary || {},
-            emotions,
-            // 노드 출력 초기값
-            rows: [],
-            mainTemplate: '',
-            groupedRows: {},
-            generationResults: [],
-            currentSheetRows: [],
-            mergedRows: [],
+        // 제네릭 파이프라인 컨텍스트 생성
+        const ctx: PipelineContext<StoryInput> = {
+            input: {
+                mode,
+                sheetId,
+                sheetName,
+                promptFile,
+                rawData: data,
+                dictionary: dictionary || {},
+                emotions,
+            },
+            outputs: {},
+            config: {},
+            history: [],
+            metadata: {},
         };
 
         // DAG 실행
-        const graph = buildStoryDAG();
+        const graph = buildStoryRouteGraph();
         const result = await graph.execute(ctx);
 
         if (!result.success) {
@@ -106,10 +69,12 @@ async function handleStoryGeneration(
             throw new Error(`DAG 실행 실패: ${errorSummary}`);
         }
 
+        const generationResults = ctx.outputs['generation'] as any[] ?? [];
+
         return res.status(200).json({
             status: "OK",
-            count: ctx.generationResults.length,
-            results: ctx.generationResults,
+            count: generationResults.length,
+            results: generationResults,
         });
 
     } catch (err: any) {

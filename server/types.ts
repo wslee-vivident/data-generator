@@ -2,11 +2,12 @@
 //  공통 타입 정의 (프로젝트 전역에서 사용)
 // =================================================================
 
-// 생성 모드 타입 (기존 3곳에 분산되어 있던 것을 통합)
 export type GenerationMode = 'single_line' | 'full_script';
-
-// LLM 모델명 타입 (llmRouter에서 사용)
 export type LLMModelName = 'gpt' | 'claude' | 'gemini_pro' | 'gemini_flash';
+
+// =================================================================
+//  Story 도메인 타입 (Feature layer)
+// =================================================================
 
 export interface BaseStoryRow {
     sceneId : string;
@@ -51,77 +52,46 @@ export interface StoryResult {
 }
 
 // =================================================================
-//  Orchestrator 설정 인터페이스
-// =================================================================
-
-/**
- * 출력 파서 인터페이스
- * StoryOrchestrator에서 LLM 응답을 파싱하는 전략을 정의합니다.
- */
-export interface OutputParser {
-    /** LLM 응답 텍스트를 StoryResult 배열로 변환 */
-    parse(rawOutput: string, row: BaseStoryRow): StoryResult[];
-    /** 파싱 결과에서 히스토리에 추가할 문자열을 생성 */
-    toHistoryLines(results: StoryResult[], row: BaseStoryRow): string[];
-}
-
-/**
- * Orchestrator 설정
- * StoryOrchestrator 생성시 필요한 모든 의존성을 포함합니다.
- */
-export interface OrchestratorConfig {
-    rows: BaseStoryRow[];
-    mainTemplate: string;
-    dictionary: Record<string, string>;
-    mode: GenerationMode;
-}
-
-// =================================================================
-//  DAG 파이프라인 타입 정의
+//  DAG Core 타입 (Generic)
+//
+//  T = 입력 데이터 타입. StoryRow, UserQuery 등 무엇이든 가능.
+//  코어 엔진은 T가 무엇인지 알 필요 없이 동작합니다.
 // =================================================================
 
 /** 노드 실행 상태 */
 export type NodeStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
 /**
- * 파이프라인 컨텍스트
- * DAG 실행 중 노드 간 데이터를 공유하는 객체.
+ * 제네릭 파이프라인 컨텍스트
  *
- * 흐름: ContextNode → templateVars
- *       PromptNode → systemPrompt
- *       InputBuildNode → inputText
- *       LLMNode → llmRawOutput
- *       ParseNode → results
+ * - input: 불변 입력 데이터 (T)
+ * - outputs: 각 노드의 실행 결과 저장소 (노드 ID → 결과)
+ * - config: 워크플로우 설정
+ * - history: 대화 연속성용 히스토리
+ * - metadata: 확장 메타데이터
  */
-export interface PipelineContext {
-    readonly row: BaseStoryRow;
-    readonly mode: GenerationMode;
-    readonly template: string;
-    readonly dictionary: Record<string, string>;
+export interface PipelineContext<T = any> {
+    readonly input: T;
+    outputs: Record<string, any>;
+    config: Record<string, any>;
     history: string[];
-    templateVars: Record<string, string>;
-    systemPrompt: string;
-    inputText: string;
-    llmRawOutput: string;
-    results: StoryResult[];
     metadata: Record<string, any>;
 }
 
 /**
- * 파이프라인 노드 인터페이스
- * DAG의 각 단계를 나타내는 실행 단위.
- * 제네릭 TCtx로 다양한 컨텍스트 타입을 지원합니다.
- * (기본값: PipelineContext → 기존 LLM 파이프라인 호환)
+ * 제네릭 노드 인터페이스
+ * 모든 파이프라인 단계는 이 인터페이스를 구현합니다.
+ * 세부 로직은 구현체(FunctionalNode, LLMNode 등)에 주입합니다.
  */
-export interface IPipelineNode<TCtx = PipelineContext> {
+export interface INode<T = any> {
     readonly id: string;
     readonly name: string;
-    execute(ctx: TCtx): Promise<void>;
+    execute(ctx: PipelineContext<T>): Promise<void>;
 }
 
 /** DAG 노드 상태 래퍼 (실행 추적용) */
-export interface DAGNodeState<TCtx = PipelineContext> {
-    node: IPipelineNode<TCtx>;
+export interface DAGNodeState<T = any> {
+    node: INode<T>;
     status: NodeStatus;
     dependencies: string[];
     error?: Error;
@@ -130,10 +100,10 @@ export interface DAGNodeState<TCtx = PipelineContext> {
 }
 
 /** DAG 실행 결과 */
-export interface DAGExecutionResult<TCtx = PipelineContext> {
+export interface DAGExecutionResult<T = any> {
     success: boolean;
-    context: TCtx;
-    nodeStates: Map<string, DAGNodeState<TCtx>>;
+    context: PipelineContext<T>;
+    nodeStates: Map<string, DAGNodeState<T>>;
     errors: Array<{ nodeId: string; error: Error }>;
     durationMs: number;
 }
