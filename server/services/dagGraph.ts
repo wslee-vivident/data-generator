@@ -1,30 +1,34 @@
 import { IPipelineNode, DAGNodeState, DAGExecutionResult, PipelineContext } from '../types';
 
 // =================================================================
-//  DAGGraph - DAG 기반 실행 엔진
+//  DAGGraph<TCtx> - 제네릭 DAG 실행 엔진
 //
 //  노드(IPipelineNode)와 의존성(dependencies)으로 구성된 방향 비순환 그래프.
 //  의존성이 충족된 노드들은 병렬로 실행되며,
 //  실패 시 의존 노드들은 자동으로 스킵 처리됩니다.
 //
+//  TCtx 기본값은 PipelineContext (LLM 파이프라인).
+//  라우트 레벨 등 다른 컨텍스트에서도 동일한 DAG 엔진을 사용할 수 있습니다.
+//
 //  사용 예시:
+//    // LLM 파이프라인 (기본)
 //    const graph = new DAGGraph();
-//    graph
-//      .addNode(contextNode, [])
-//      .addNode(promptNode, ['context'])
-//      .addNode(llmNode, ['prompt']);
-//    const result = await graph.execute(ctx);
+//    graph.addNode(contextNode, []).addNode(llmNode, ['context']);
+//
+//    // 라우트 레벨 파이프라인
+//    const routeGraph = new DAGGraph<StoryRouteContext>();
+//    routeGraph.addNode(parseNode, []).addNode(generateNode, ['parse']);
 // =================================================================
 
-export class DAGGraph {
-    private nodes: Map<string, DAGNodeState> = new Map();
+export class DAGGraph<TCtx = PipelineContext> {
+    private nodes: Map<string, DAGNodeState<TCtx>> = new Map();
 
     /**
      * 노드 추가 (체이닝 지원)
      * @param node - 파이프라인 노드
      * @param dependencies - 선행 노드 ID 목록 (이 노드들이 완료되어야 실행 가능)
      */
-    addNode(node: IPipelineNode, dependencies: string[] = []): this {
+    addNode(node: IPipelineNode<TCtx>, dependencies: string[] = []): this {
         if (this.nodes.has(node.id)) {
             throw new Error(`노드 ID 중복: ${node.id}`);
         }
@@ -88,7 +92,7 @@ export class DAGGraph {
      * 의존성이 충족된 노드들을 병렬로 실행합니다.
      * 노드 실패 시 해당 노드에 의존하는 후속 노드들은 스킵됩니다.
      */
-    async execute(ctx: PipelineContext): Promise<DAGExecutionResult> {
+    async execute(ctx: TCtx): Promise<DAGExecutionResult<TCtx>> {
         const startTime = Date.now();
         const errors: Array<{ nodeId: string; error: Error }> = [];
 
@@ -137,15 +141,15 @@ export class DAGGraph {
         return {
             success: errors.length === 0,
             context: ctx,
-            nodeStates: new Map(this.nodes),
+            nodeStates: new Map<string, DAGNodeState<TCtx>>(this.nodes),
             errors,
             durationMs: Date.now() - startTime,
         };
     }
 
     /** 의존성이 충족된 실행 가능 노드 탐색 */
-    private findReadyNodes(completed: Set<string>, failed: Set<string>): DAGNodeState[] {
-        const ready: DAGNodeState[] = [];
+    private findReadyNodes(completed: Set<string>, failed: Set<string>): DAGNodeState<TCtx>[] {
+        const ready: DAGNodeState<TCtx>[] = [];
 
         for (const [, state] of this.nodes) {
             if (state.status !== 'pending') continue;
@@ -166,7 +170,7 @@ export class DAGGraph {
     }
 
     /** 단일 노드 실행 (상태 추적 포함) */
-    private async executeNode(state: DAGNodeState, ctx: PipelineContext): Promise<void> {
+    private async executeNode(state: DAGNodeState<TCtx>, ctx: TCtx): Promise<void> {
         state.status = 'running';
         state.startedAt = Date.now();
 
@@ -210,7 +214,7 @@ export class DAGGraph {
     }
 
     /** 특정 노드 상태 조회 */
-    getNodeState(id: string): DAGNodeState | undefined {
+    getNodeState(id: string): DAGNodeState<TCtx> | undefined {
         return this.nodes.get(id);
     }
 

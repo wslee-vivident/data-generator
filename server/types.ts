@@ -110,16 +110,18 @@ export interface PipelineContext {
 /**
  * 파이프라인 노드 인터페이스
  * DAG의 각 단계를 나타내는 실행 단위.
+ * 제네릭 TCtx로 다양한 컨텍스트 타입을 지원합니다.
+ * (기본값: PipelineContext → 기존 LLM 파이프라인 호환)
  */
-export interface IPipelineNode {
+export interface IPipelineNode<TCtx = PipelineContext> {
     readonly id: string;
     readonly name: string;
-    execute(ctx: PipelineContext): Promise<void>;
+    execute(ctx: TCtx): Promise<void>;
 }
 
 /** DAG 노드 상태 래퍼 (실행 추적용) */
-export interface DAGNodeState {
-    node: IPipelineNode;
+export interface DAGNodeState<TCtx = PipelineContext> {
+    node: IPipelineNode<TCtx>;
     status: NodeStatus;
     dependencies: string[];
     error?: Error;
@@ -128,10 +130,10 @@ export interface DAGNodeState {
 }
 
 /** DAG 실행 결과 */
-export interface DAGExecutionResult {
+export interface DAGExecutionResult<TCtx = PipelineContext> {
     success: boolean;
-    context: PipelineContext;
-    nodeStates: Map<string, DAGNodeState>;
+    context: TCtx;
+    nodeStates: Map<string, DAGNodeState<TCtx>>;
     errors: Array<{ nodeId: string; error: Error }>;
     durationMs: number;
 }
